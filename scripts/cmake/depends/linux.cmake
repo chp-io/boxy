@@ -39,6 +39,10 @@
 if((ENABLE_BUILD_USERSPACE) AND NOT WIN32 AND NOT CYGWIN)
     message(STATUS "Including dependency: linux")
 
+    if(NOT DEFINED LINUX_CUSTOM_CONFIG)
+        set(LINUX_CUSTOM_CONFIG ${BOXY_SOURCE_ROOT_DIR}/bflinux/config)
+    endif()
+
     if(NOT DEFINED LINUX_DIR)
         if(EXISTS ${CMAKE_SOURCE_DIR}/../linux/)
             set(LINUX_DIR PATH ${CMAKE_SOURCE_DIR}/../linux/)
@@ -66,7 +70,7 @@ if((ENABLE_BUILD_USERSPACE) AND NOT WIN32 AND NOT CYGWIN)
             linux-source userspace
             COMMAND ${CMAKE_COMMAND} -E make_directory ${LINUX_BUILD_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${CACHE_DIR}/linux-source/ ${LINUX_BUILD_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy ${BOXY_SOURCE_ROOT_DIR}/bflinux/config ${LINUX_BUILD_DIR}/.config
+            COMMAND ${CMAKE_COMMAND} -E copy ${LINUX_CUSTOM_CONFIG} ${LINUX_BUILD_DIR}/.config
             COMMAND ${CMAKE_COMMAND} -E chdir ${LINUX_BUILD_DIR} make oldconfig
             COMMAND ${CMAKE_COMMAND} -E make_directory ${PREFIXES_DIR}/vms/
         )
@@ -83,7 +87,7 @@ if((ENABLE_BUILD_USERSPACE) AND NOT WIN32 AND NOT CYGWIN)
 
         add_dependency_step(
             linux-source userspace
-            COMMAND ${CMAKE_COMMAND} -E copy ${BOXY_SOURCE_ROOT_DIR}/bflinux/config ${LINUX_BUILD_DIR}/.config
+            COMMAND ${CMAKE_COMMAND} -E copy ${LINUX_CUSTOM_CONFIG} ${LINUX_BUILD_DIR}/.config
             COMMAND ${CMAKE_COMMAND} -E chdir ${LINUX_BUILD_DIR} make oldconfig
             COMMAND ${CMAKE_COMMAND} -E make_directory ${PREFIXES_DIR}/vms/
         )
