@@ -24,6 +24,8 @@
 #include <bfstring.h>
 #include <bfaffinity.h>
 #include <bfbuilderinterface.h>
+#include <arch/intel_x64/cpuid.h>
+
 
 #include <list>
 #include <memory>
@@ -92,6 +94,87 @@ rdtsc()
 #endif
 }
 
+static uint64_t
+calibrate_tsc_freq_khz()
+{
+    using namespace ::intel_x64::cpuid;
+	auto [eax, ebx, ecx, edx] = ::x64::cpuid::get(0x15, 0, 0, 0);
+
+    // Notes:
+    //
+    // For now we only support systems that provide the TSC frequency
+    // through CPUID leaf 0x15. Please see the following:
+    // - https://lore.kernel.org/patchwork/patch/689875/
+    //
+    // We could also get the information from the Plafrom Info MSR, but from
+    // testing, this value doesn't seem to be as accurate as CPUID leaf 0x15.
+    //
+    // One issue is that for some CPUs, the frequency is reported as 0
+    // even though the numerator and denominator are provided. The manual
+    // states that this means the core crystal clock is not enumerated.
+    // The Linux kernel maintains a whitelist to deal with this to ensure the
+    // TSC frequency is accurate. This can be seen by the following links:
+    // - https://lore.kernel.org/patchwork/patch/715512/
+    // - https://elixir.bootlin.com/linux/v4.19.32/source/arch/x86/kernel/tsc.c#L610
+    //
+    // Where the Linux Kernel got this information is still a mystery as I
+    // was not able to track down where the original 24MHz and 25MHz numbers
+    // came from as it appears that it originated from this patch, which was
+    // written by an Intel engineer, and already contained these values:
+    // - https://lore.kernel.org/patchwork/patch/696814/
+    //
+
+    if (ecx == 0) {
+        switch(feature_information::eax::get() & 0x000F00F0) {
+            case 0x400E0:
+            case 0x500E0:
+            case 0x800E0:
+            case 0x900E0:
+                ecx = 24000;
+                break;
+
+            case 0x50050:
+                ecx = 25000;
+                break;
+
+            case 0x500C0:
+                ecx = 19200;
+                break;
+
+            default:
+                break;
+        };
+    }
+    else {
+        ecx /= 1000;
+    }
+
+	if (eax == 0 || ebx == 0 || ecx == 0) {
+        throw std::runtime_error("missing tsc info. system not supported");
+    }
+
+    return (ecx * ebx) / eax;
+}
+
+bool
+init_tsc()
+{
+    status_t ret = 0;
+    uint64_t tsc_freq = calibrate_tsc_freq_khz();
+
+#ifdef __CYGWIN__
+    dl_timespec_get();
+#endif
+
+    // We first need to calibrate and set the tsc freq as part of the vclock
+    // initialization. This is done here instead of in the VMM to remove the
+    // need for a serial device to be needed in case the CPU isn't supported.
+    ret = hypercall_vclock_op__set_tsc_freq_khz(
+        g_vcpuid, tsc_freq);
+
+    return ret == SUCCESS;
+}
+
 // -----------------------------------------------------------------------------
 // Wall Clock
 // -----------------------------------------------------------------------------
@@ -102,10 +185,7 @@ set_wallclock()
     struct timespec ts;
     uint64_t initial_tsc = 0;
     uint64_t current_tsc = 0;
-
-#ifdef __CYGWIN__
-    dl_timespec_get();
-#endif
+    status_t ret = 0;
 
     // Note:
     //
@@ -145,8 +225,6 @@ set_wallclock()
     // wallclock, we need to give this information to the VMM so that it can
     // use this information to calculate the current time.
     //
-
-    status_t ret = 0;
 
     ret |= hypercall_vclock_op__set_host_wallclock_rtc(
         g_vcpuid, ts.tv_sec, ts.tv_nsec);
@@ -419,6 +497,8 @@ protected_main(const args_type &args)
 int
 main(int argc, char *argv[])
 {
+    init_tsc();
+
     setup_kill_signal_handler();
 
     try {

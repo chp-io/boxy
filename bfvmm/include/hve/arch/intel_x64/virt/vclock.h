@@ -191,6 +191,7 @@ public:
     bool handle_yield(vcpu *vcpu);
     bool handle_preemption_timer(vcpu *vcpu);
 
+    void vclock_op__set_tsc_freq_khz(vcpu *vcpu);
     void vclock_op__get_tsc_freq_khz(vcpu *vcpu);
     void vclock_op__set_next_event(vcpu *vcpu);
     void vclock_op__reset_host_wallclock(vcpu *vcpu);

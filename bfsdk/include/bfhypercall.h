@@ -624,6 +624,7 @@ hypercall_virq_op__get_next_virq(void)
 /* -------------------------------------------------------------------------- */
 
 #define hypercall_enum_vclock_op__get_tsc_freq_khz 0xBF11000000000100
+#define hypercall_enum_vclock_op__set_tsc_freq_khz 0xBF11000000000101
 #define hypercall_enum_vclock_op__set_next_event 0xBF11000000000102
 #define hypercall_enum_vclock_op__reset_host_wallclock 0xBF11000000000103
 #define hypercall_enum_vclock_op__set_host_wallclock_rtc 0xBF11000000000104
@@ -637,6 +638,13 @@ hypercall_vclock_op__get_tsc_freq_khz(void)
 {
     return _vmcall(
         hypercall_enum_vclock_op__get_tsc_freq_khz, 0, 0, 0);
+}
+
+static inline uint64_t
+hypercall_vclock_op__set_tsc_freq_khz(vcpuid_t vcpuid, uint64_t freq)
+{
+    return _vmcall(
+        hypercall_enum_vclock_op__set_tsc_freq_khz, vcpuid, freq, 0);
 }
 
 static inline uint64_t
