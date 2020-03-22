@@ -268,6 +268,68 @@ sub_timespec(const struct timespec &ts1, const struct timespec &ts2)
     return {sec, nsec};
 }
 
+static uint64_t
+calibrate_tsc_freq_khz()
+{
+    using namespace ::intel_x64::cpuid;
+	auto [eax, ebx, ecx, edx] = ::x64::cpuid::get(0x15, 0, 0, 0);
+
+    // Notes:
+    //
+    // For now we only support systems that provide the TSC frequency
+    // through CPUID leaf 0x15. Please see the following:
+    // - https://lore.kernel.org/patchwork/patch/689875/
+    //
+    // We could also get the information from the Plafrom Info MSR, but from
+    // testing, this value doesn't seem to be as accurate as CPUID leaf 0x15.
+    //
+    // One issue is that for some CPUs, the frequency is reported as 0
+    // even though the numerator and denominator are provided. The manual
+    // states that this means the core crystal clock is not enumerated.
+    // The Linux kernel maintains a whitelist to deal with this to ensure the
+    // TSC frequency is accurate. This can be seen by the following links:
+    // - https://lore.kernel.org/patchwork/patch/715512/
+    // - https://elixir.bootlin.com/linux/v4.19.32/source/arch/x86/kernel/tsc.c#L610
+    //
+    // Where the Linux Kernel got this information is still a mystery as I
+    // was not able to track down where the original 24MHz and 25MHz numbers
+    // came from as it appears that it originated from this patch, which was
+    // written by an Intel engineer, and already contained these values:
+    // - https://lore.kernel.org/patchwork/patch/696814/
+    //
+
+    if (ecx == 0) {
+        switch(feature_information::eax::get() & 0x000F00F0) {
+            case 0x400E0:
+            case 0x500E0:
+            case 0x800E0:
+            case 0x900E0:
+                ecx = 24000;
+                break;
+
+            case 0x50050:
+                ecx = 25000;
+                break;
+
+            case 0x500C0:
+                ecx = 19200;
+                break;
+
+            default:
+                break;
+        };
+    }
+    else {
+        ecx /= 1000;
+    }
+
+	if (eax == 0 || ebx == 0 || ecx == 0) {
+        throw std::runtime_error("missing tsc info. system not supported");
+    }
+
+    return (ecx * ebx) / eax;
+}
+
 // -----------------------------------------------------------------------------
 // Implementation
 // -----------------------------------------------------------------------------
@@ -348,15 +410,21 @@ vclock_handler::get_guest_wallclock() const
 
 uint64_t
 vclock_handler::tsc_freq_khz() const noexcept
-{ return m_tsc_freq_khz; }
+{
+    bfalert_nhex(0, "tsc_freq_khz: tsc freq not initialized\n", m_tsc_freq_khz);
+    return m_tsc_freq_khz; }
 
 uint64_t
 vclock_handler::tsc_to_nsec(uint64_t tsc) const noexcept
-{ return mul_div(tsc, 1000000, m_tsc_freq_khz); }
+{
+    bfalert_nhex(0, "tsc_to_nsec: tsc freq not initialized\n", m_tsc_freq_khz);
+    return mul_div(tsc, 1000000, m_tsc_freq_khz); }
 
 uint64_t
 vclock_handler::nsec_to_tsc(uint64_t nsec) const noexcept
-{ return mul_div(nsec, m_tsc_freq_khz, 1000000); }
+{
+    bfalert_nhex(0, "nsec_to_tsc: tsc freq not initialized\n", m_tsc_freq_khz);
+    return mul_div(nsec, m_tsc_freq_khz, 1000000); }
 
 // -----------------------------------------------------------------------------
 // Handlers
@@ -393,7 +461,8 @@ void
 vclock_handler::vclock_op__set_tsc_freq_khz(vcpu *vcpu)
 {
     try {
-        m_tsc_freq_khz = vcpu->rbx();
+        m_tsc_freq_khz = vcpu->rcx();
+        bfalert_nhex(0, "dom0 tsc freq: ", m_tsc_freq_khz);
         vcpu->set_rax(SUCCESS);
     }
     catchall({
@@ -549,7 +618,16 @@ vclock_handler::dispatch_domU(vcpu *vcpu)
         return false;
     }
 
+    if (m_tsc_freq_khz == 0 && vcpu->rax() != hypercall_enum_vclock_op__set_tsc_freq_khz) {
+        bfalert_nhex(0, "vmcall reason: " , vcpu->rax());
+        vcpu->halt("vclock tsc needs to be calibrated first");
+    }
+
     switch (vcpu->rax()) {
+        case hypercall_enum_vclock_op__set_tsc_freq_khz:
+            vclock_op__set_tsc_freq_khz(vcpu);
+            break;
+
         case hypercall_enum_vclock_op__get_tsc_freq_khz:
             vclock_op__get_tsc_freq_khz(vcpu);
             break;

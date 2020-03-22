@@ -44,6 +44,7 @@ using namespace std::chrono;
 
 vcpuid_t g_vcpuid;
 domainid_t g_domainid;
+uint64_t g_tsc_freq;
 
 auto ctl = std::make_unique<ioctl>();
 
@@ -53,7 +54,9 @@ auto ctl = std::make_unique<ioctl>();
 
 uint64_t
 _vmcall(uint64_t r1, uint64_t r2, uint64_t r3, uint64_t r4) noexcept
-{ return ctl->call_ioctl_vmcall(r1, r2, r3, r4); }
+{
+    std::cout << "vmcall: " << std::hex << r1 << " "<< r2 << " "<< r3 << " "<< r4 << "\n";
+    return ctl->call_ioctl_vmcall(r1, r2, r3, r4); }
 
 // -----------------------------------------------------------------------------
 // RDTSC
@@ -160,7 +163,7 @@ bool
 init_tsc()
 {
     status_t ret = 0;
-    uint64_t tsc_freq = calibrate_tsc_freq_khz();
+    g_tsc_freq = calibrate_tsc_freq_khz();
 
 #ifdef __CYGWIN__
     dl_timespec_get();
@@ -170,7 +173,14 @@ init_tsc()
     // initialization. This is done here instead of in the VMM to remove the
     // need for a serial device to be needed in case the CPU isn't supported.
     ret = hypercall_vclock_op__set_tsc_freq_khz(
-        g_vcpuid, tsc_freq);
+        g_vcpuid, g_tsc_freq);
+
+    ret = hypercall_vclock_op__set_tsc_freq_khz(
+        g_domainid, g_tsc_freq);
+
+    std::cout << "tsc freq: " << g_tsc_freq << "\n";
+    std::cout << "vcpuid: " << g_vcpuid << "\n";
+    std::cout << "domainid: " << g_domainid << "\n";
 
     return ret == SUCCESS;
 }
@@ -485,7 +495,10 @@ protected_main(const args_type &args)
         set_affinity(0);
     }
 
+
     create_vm_from_bzimage(args);
+
+    init_tsc();
 
     auto __ = gsl::finally([&] {
         ctl->call_ioctl_destroy(g_domainid);
@@ -497,8 +510,6 @@ protected_main(const args_type &args)
 int
 main(int argc, char *argv[])
 {
-    init_tsc();
-
     setup_kill_signal_handler();
 
     try {
