@@ -43,6 +43,11 @@ target_sources(boxy_hve PRIVATE
     $<${X64}:arch/intel_x64/vmcall/domain_op.cpp>
     $<${X64}:arch/intel_x64/vmcall/run_op.cpp>
     $<${X64}:arch/intel_x64/vmcall/vcpu_op.cpp>
+    $<${X64}:arch/intel_x64/vmi/events/control_register.cpp>
+    $<${X64}:arch/intel_x64/vmi/events/ept_violation.cpp>
+    $<${X64}:arch/intel_x64/vmi/events/monitor_trap.cpp>
+    $<${X64}:arch/intel_x64/vmi/policy_op.cpp>
+    $<${X64}:arch/intel_x64/vmi/vmi_op.cpp>
     $<${X64}:arch/intel_x64/domain.cpp>
     $<${X64}:arch/intel_x64/uart.cpp>
     $<${X64}:arch/intel_x64/vcpu.cpp>
