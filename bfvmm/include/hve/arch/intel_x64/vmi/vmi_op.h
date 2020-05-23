@@ -54,11 +54,12 @@ public:
 
 private:
 
-    void vcpu_op__memmap_ept(vcpu *vcpu);
-    void vcpu_op__translate_v2p(vcpu *vcpu);
-    void vcpu_op__get_register_data(vcpu *vcpu);
+    void vmi_op__memmap_ept(vcpu *vcpu);
+    void vmi_op__translate_v2p(vcpu *vcpu);
+    void vmi_op__get_register_data(vcpu *vcpu);
 
     bool dispatch(vcpu *vcpu);
+    bool cpuid_vmi(vcpu_t *vcpu);
 
 private:
 

@@ -1716,6 +1716,7 @@ extern "C" {
 #define hypercall_enum_domain_op 0x02
 #define hypercall_enum_vcpu_op 0x03
 #define hypercall_enum_uart_op 0x04
+#define hypercall_enum_vmi_op 0x05
 #define hypercall_enum_virq_op 0x10
 #define hypercall_enum_vclock_op 0x11
 
@@ -2393,6 +2394,23 @@ hypercall_vclock_op__get_guest_wallclock(
     return _vmcall4(
                &op, sec, nsec, tsc);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Virtual Machine Introspection                                              */
+/* -------------------------------------------------------------------------- */
+
+#define bf_vmi_cpuid_leaf 0x40001337
+#define bf_vmi_cpuid_rax 42
+#define bf_vmi_cpuid_rbx 42
+#define bf_vmi_cpuid_rcx 42
+#define bf_vmi_cpuid_rdx 42
+
+#define hypercall_enum_vmi_op__invalid 0xBF05000000000000
+#define hypercall_enum_vmi_op__ack 0xBF05000000000001
+#define hypercall_enum_vmi_op__get_registers 0xBF05000000000002
+#define hypercall_enum_vmi_op__set_registers 0xBF05000000000003
+#define hypercall_enum_vmi_op__translate_v2p 0xBF05000000000004
+#define hypercall_enum_vmi_op__map_pa 0xBF05000000000005
 
 #ifdef __cplusplus
 }
