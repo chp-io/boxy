@@ -103,7 +103,9 @@ vcpu::vcpu(
     m_x2apic_handler{this},
 
     m_vclock_handler{this},
-    m_virq_handler{this}
+    m_virq_handler{this},
+
+    m_vmi_op_handler{this}
 {
     this->set_eptp(domain->ept());
 
