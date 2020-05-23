@@ -48,6 +48,8 @@
 #include "virt/vclock.h"
 #include "virt/virq.h"
 
+#include "vmi/vmi_op.h"
+
 //------------------------------------------------------------------------------
 // Definition
 //------------------------------------------------------------------------------
@@ -415,6 +417,8 @@ private:
 
     vclock_handler m_vclock_handler;
     virq_handler m_virq_handler;
+
+    vmi_op_handler m_vmi_op_handler;
 };
 
 }

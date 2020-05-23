@@ -35,13 +35,41 @@ policy_op_handler::policy_op_handler(
         return;
     }
 
-    vcpu->add_vmcall_handler({&policy_op_handler::dispatch, this});
+    // vcpu->add_vmcall_handler({&policy_op_handler::dispatch, this});
 }
+
+// void
+// policy_op_handler::policy_op__set_monitoring(gsl::not_null<vcpu *> vcpu)
+// {
+//     try {
+//         auto target_vcpu = get_vcpu(vcpu->rbx());
+//         auto monitoring_vcpu = get_vcpu(vcpu->rcx());
+
+//         vcpu->set_rax(SUCCESS);
+//     }
+//     catchall({
+//         vcpu->set_rax(FAILURE);
+//     })
+// }
 
 bool
 policy_op_handler::dispatch(vcpu *vcpu)
 {
     return false;
+    // if (bfopcode(vcpu->rax()) != hypercall_enum_policy_op) {
+    //     return false;
+    // }
+
+    // switch (vcpu->rax()) {
+    //     case hypercall_enum_policy_op__set_monitoring:
+    //         this->policy_op__set_monitoring(vcpu);
+    //         return true;
+
+    //     default:
+    //         break;
+    // };
+
+    // throw std::runtime_error("unknown vcpu opcode");
 }
 
 }
