@@ -62,26 +62,34 @@ vmi_op_handler::vmi_op_handler(
 void
 vmi_op_handler::vmi_op__memmap_ept(vcpu *vcpu)
 {
-    uint64_t addr = vcpu->rdi();
-    uint64_t gpa2 = vcpu->rsi();
+    uint64_t gva = vcpu->rdi(); // gva domU vmi
+    uint64_t gpa2 = vcpu->rsi(); // target phys addr (i.e dom0 gpa)
+    auto foreign_vcpu = vcpu->parent_vcpu(); // TODO get vcpu from domid in RDX
 
-    auto [gpa1, unused1] = vcpu->gva_to_gpa(addr);
+    auto [gpa1, unused1] = vcpu->gva_to_gpa(gva);
+
     auto &&guest_map = get_domain(vcpu->domid())->ept();
+
+    using namespace ::intel_x64::ept;
 
     if(guest_map.is_2m(gpa1))
     {
         bfdebug_info(0, "vmi_op: guest_map is 2m");
-        auto gpa1_2m = bfn::upper(gpa1, ::intel_x64::ept::pd::from);
+        auto gpa1_2m = bfn::upper(gpa1, pd::from);
         bfvmm::intel_x64::ept::identity_map_convert_2m_to_4k(guest_map, gpa1_2m);
     }
 
-    auto gpa1_4k = bfn::upper(gpa1, ::intel_x64::ept::pt::from);
-    auto gpa2_4k = bfn::upper(gpa2, ::intel_x64::ept::pt::from);
+    auto gpa1_4k = bfn::upper(gpa1, pt::from);
+    auto gpa2_4k = bfn::upper(gpa2, pt::from);
 
     vcpu->set_rsi(gpa2_4k);
 
     auto [pte, unused2] = guest_map.entry(gpa1_4k);
-    ::intel_x64::ept::pt::entry::phys_addr::set(pte, gpa2_4k);
+
+    foreign_vcpu->load();
+    auto [gpa2_4k_, unused3] = foreign_vcpu->gpa_to_hpa(gpa2_4k);
+    vcpu->load();
+    pt::entry::phys_addr::set(pte, gpa2_4k_);
 
     // flush EPT tlb, guest TLB doesn't need to be flushed
     // as that translation hasn't changed
@@ -92,8 +100,10 @@ void
 vmi_op_handler::vmi_op__translate_v2p(vcpu *vcpu)
 {
     auto addr = vcpu->rdi();
+    // bfalert_nhex(0, "vmi_op__translate_v2p from", addr);
     auto [gpa, unused] = vcpu->gva_to_gpa(addr);
     vcpu->set_rdi(gpa);
+    // bfalert_nhex(0, "vmi_op__translate_v2p to", gpa);
 }
 
 void
@@ -148,12 +158,15 @@ vmi_op_handler::dispatch(vcpu *vcpu)
         switch (vcpu->rax())
         {
             case hypercall_enum_vmi_op__translate_v2p:
+                // bfdebug_info(0, "vmi_op: translate_v2p");
                 vmi_op__translate_v2p(vcpu);
                 break;
             case hypercall_enum_vmi_op__get_registers:
+                // bfdebug_info(0, "vmi_op: get_registers");
                 vmi_op__get_register_data(vcpu);
                 break;
             case hypercall_enum_vmi_op__map_pa:
+                // bfdebug_info(0, "vmi_op: map_pa");
                 vmi_op__memmap_ept(vcpu);
                 break;
             default:
