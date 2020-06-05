@@ -380,6 +380,24 @@ public:
     ///
     void halt(const std::string &str = {}) override;
 
+public:
+
+    //--------------------------------------------------------------------------
+    // Model-specific registers
+    //--------------------------------------------------------------------------
+
+    /// MSR Registers
+    ///
+
+    VIRTUAL uint64_t ia32_kernel_gs_base() const;
+    VIRTUAL void ia32_kernel_gs_base(uint64_t val);
+    VIRTUAL uint64_t ia32_lstar() const;
+    VIRTUAL void ia32_lstar(uint64_t val);
+    VIRTUAL uint64_t ia32_cstar() const;
+    VIRTUAL void ia32_cstar(uint64_t val);
+
+    /// @cond
+
 private:
 
     void write_dom0_guest_state(domain *domain);

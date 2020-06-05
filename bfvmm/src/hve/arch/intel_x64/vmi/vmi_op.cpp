@@ -134,10 +134,16 @@ vmi_op_handler::vmi_op__get_register_data(vcpu *vcpu)
     j["RDI"] = target_vcpu->rdi();
     j["RIP"] = target_vcpu->rip();
     j["RSP"] = target_vcpu->rsp();
-    j["CR0"] = ::intel_x64::vmcs::guest_cr0::get();
-    j["CR3"] = ::intel_x64::vmcs::guest_cr3::get();
-    j["CR4"] = ::intel_x64::vmcs::guest_cr4::get();
-    j["MSR_EFER"] = ::intel_x64::vmcs::host_ia32_efer::get();
+    j["CR0"] = target_vcpu->cr0();
+    j["CR2"] = target_vcpu->cr2();
+    j["CR3"] = target_vcpu->cr3();
+    j["CR4"] = target_vcpu->cr4();
+    j["MSR_EFER"] = target_vcpu->ia32_efer();
+    j["IDTR_BASE"] = target_vcpu->idt_base();
+    // j["GS_BASE"] = target_vcpu->gs_base();
+    j["GS_BASE"] = target_vcpu->ia32_kernel_gs_base();
+    j["MSR_LSTAR"] = target_vcpu->ia32_lstar();
+    j["MSR_CSTAR"] = target_vcpu->ia32_cstar();
 
     vcpu->load();
 

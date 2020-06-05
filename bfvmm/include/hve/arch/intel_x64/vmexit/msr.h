@@ -94,6 +94,16 @@ public:
 
     /// @endcond
 
+
+public:
+
+    /// @cond
+
+    uint64_t get_msr(uint32_t msr) const;
+    void set_msr(uint32_t msr, uint64_t val);
+
+    /// @endcond
+
 private:
 
     vcpu *m_vcpu;
