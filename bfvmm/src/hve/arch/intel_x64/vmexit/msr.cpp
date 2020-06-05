@@ -285,4 +285,20 @@ msr_handler::handle_wrmsr_0x0000064E(
     return false;
 }
 
+// -----------------------------------------------------------------------------
+// Getter / Setter
+// -----------------------------------------------------------------------------
+
+uint64_t
+msr_handler::get_msr(uint32_t msr) const
+{
+    return m_msrs.at(msr);
+}
+
+void
+msr_handler::set_msr(uint32_t msr, uint64_t val)
+{
+    m_msrs[msr] = val;
+}
+
 }
