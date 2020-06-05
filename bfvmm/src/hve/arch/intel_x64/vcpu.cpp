@@ -298,6 +298,46 @@ vcpu::halt(const std::string &str)
 }
 
 //------------------------------------------------------------------------------
+// Model-specific registers
+//------------------------------------------------------------------------------
+
+uint64_t
+vcpu::ia32_kernel_gs_base() const
+{
+    return m_msr_handler.get_msr(::x64::msrs::ia32_kernel_gs_base::addr);
+}
+
+void
+vcpu::ia32_kernel_gs_base(uint64_t val)
+{
+    m_msr_handler.set_msr(::x64::msrs::ia32_kernel_gs_base::addr, val);
+}
+
+uint64_t
+vcpu::ia32_lstar() const
+{
+    return m_msr_handler.get_msr(::x64::msrs::ia32_lstar::addr);
+}
+
+void
+vcpu::ia32_lstar(uint64_t val)
+{
+    m_msr_handler.set_msr(::x64::msrs::ia32_lstar::addr, val);
+}
+
+uint64_t
+vcpu::ia32_cstar() const
+{
+    return m_msr_handler.get_msr(::x64::msrs::ia32_cstar::addr);
+}
+
+void
+vcpu::ia32_cstar(uint64_t val)
+{
+    m_msr_handler.set_msr(::x64::msrs::ia32_cstar::addr, val);
+}
+
+//------------------------------------------------------------------------------
 // Setup Functions
 //------------------------------------------------------------------------------
 
