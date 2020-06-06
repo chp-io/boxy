@@ -26,12 +26,8 @@
 #include <bfhypercall.h>
 #include <bfjson.h>
 
-#include <algorithm>
-
 namespace boxy::intel_x64
 {
-
-bool vmi_op_vmcall_dispatcher (vcpu_t *vcpu);
 
 vmi_op_handler::vmi_op_handler(
     gsl::not_null<vcpu *> vcpu
@@ -45,7 +41,7 @@ vmi_op_handler::vmi_op_handler(
     // and domU is always the introspecting VM.
     // This will change once the vmi policy_op is implemented.
 
-    if(vcpu->is_domU()) {
+    if (vcpu->is_domU()) {
         vcpu->add_vmcall_handler({&vmi_op_handler::dispatch, this});
         vcpu->add_cpuid_emulator(
             bf_vmi_cpuid_leaf, {&vmi_op_handler::cpuid_vmi, this});
@@ -62,18 +58,30 @@ vmi_op_handler::vmi_op_handler(
 void
 vmi_op_handler::vmi_op__memmap_ept(vcpu *vcpu)
 {
-    uint64_t gva = vcpu->rdi(); // gva domU vmi
-    uint64_t gpa2 = vcpu->rsi(); // target phys addr (i.e dom0 gpa)
-    auto foreign_vcpu = vcpu->parent_vcpu(); // TODO get vcpu from domid in RDX
+    // Input:
+    // RDI = GVA holding the GPA to remap from
+    // RSI = GPA of the target to remap to
+    // RDX = domid of the target
+    //
+    // Output:
+    // Set RSI to the remapped GPA aligned
 
-    auto [gpa1, unused1] = vcpu->gva_to_gpa(gva);
+    intel_x64::vcpu *target_vcpu;
+    if (vcpu->rdx() == 0) {
+        target_vcpu = vcpu->parent_vcpu();
+    }
+    else {
+        throw std::runtime_error("domU targets are not yet supported");
+    }
+
+    auto [gpa1, unused1] = vcpu->gva_to_gpa(vcpu->rdi());
+    uint64_t gpa2 = vcpu->rsi();
 
     auto &&guest_map = get_domain(vcpu->domid())->ept();
 
     using namespace ::intel_x64::ept;
 
-    if(guest_map.is_2m(gpa1))
-    {
+    if (guest_map.is_2m(gpa1)) {
         bfdebug_info(0, "vmi_op: guest_map is 2m");
         auto gpa1_2m = bfn::upper(gpa1, pd::from);
         bfvmm::intel_x64::ept::identity_map_convert_2m_to_4k(guest_map, gpa1_2m);
@@ -86,10 +94,10 @@ vmi_op_handler::vmi_op__memmap_ept(vcpu *vcpu)
 
     auto [pte, unused2] = guest_map.entry(gpa1_4k);
 
-    foreign_vcpu->load();
-    auto [gpa2_4k_, unused3] = foreign_vcpu->gpa_to_hpa(gpa2_4k);
+    target_vcpu->load();
+    auto [hpa, unused3] = target_vcpu->gpa_to_hpa(gpa2_4k);
     vcpu->load();
-    pt::entry::phys_addr::set(pte, gpa2_4k_);
+    pt::entry::phys_addr::set(pte, hpa);
 
     // flush EPT tlb, guest TLB doesn't need to be flushed
     // as that translation hasn't changed
@@ -100,10 +108,28 @@ void
 vmi_op_handler::vmi_op__translate_v2p(vcpu *vcpu)
 {
     auto addr = vcpu->rdi();
-    // bfalert_nhex(0, "vmi_op__translate_v2p from", addr);
-    auto [gpa, unused] = vcpu->gva_to_gpa(addr);
+    auto domid = vcpu->rdx();
+    intel_x64::vcpu *_vcpu;
+
+    switch (domid) {
+        case 0:
+            _vcpu = vcpu->parent_vcpu();
+            _vcpu->load();
+            break;
+        case self:
+            _vcpu = vcpu;
+            break;
+        default:
+            throw std::runtime_error("v2p: domU targets are not yet supported");
+    }
+
+    auto [gpa, unused] = _vcpu->gva_to_gpa(addr);
+
+    if (domid != self) {
+        vcpu->load();
+    }
+
     vcpu->set_rdi(gpa);
-    // bfalert_nhex(0, "vmi_op__translate_v2p to", gpa);
 }
 
 void
@@ -111,12 +137,19 @@ vmi_op_handler::vmi_op__get_register_data(vcpu *vcpu)
 {
     uintptr_t addr = vcpu->rdi();
     uint64_t size = vcpu->rsi();
-    json j;
+
+    intel_x64::vcpu *target_vcpu;
+    if (vcpu->rdx() == 0) {
+        target_vcpu = vcpu->parent_vcpu();
+    }
+    else {
+        throw std::runtime_error("get_regs: domU targets are not yet supported");
+    }
 
     // TODO: Find the target vcpu once policy_op is implemented
-    auto target_vcpu = vcpu->parent_vcpu();
     target_vcpu->load();
 
+    json j;
     j["RAX"] = target_vcpu->rax();
     j["RBX"] = target_vcpu->rbx();
     j["RCX"] = target_vcpu->rcx();
@@ -161,18 +194,14 @@ vmi_op_handler::dispatch(vcpu *vcpu)
     }
 
     try {
-        switch (vcpu->rax())
-        {
+        switch (vcpu->rax()) {
             case hypercall_enum_vmi_op__translate_v2p:
-                // bfdebug_info(0, "vmi_op: translate_v2p");
                 vmi_op__translate_v2p(vcpu);
                 break;
             case hypercall_enum_vmi_op__get_registers:
-                // bfdebug_info(0, "vmi_op: get_registers");
                 vmi_op__get_register_data(vcpu);
                 break;
             case hypercall_enum_vmi_op__map_pa:
-                // bfdebug_info(0, "vmi_op: map_pa");
                 vmi_op__memmap_ept(vcpu);
                 break;
             default:
@@ -182,7 +211,7 @@ vmi_op_handler::dispatch(vcpu *vcpu)
         vcpu->set_rax(SUCCESS);
     }
     catchall({
-        bfdebug_info(0, "vmi_op_handler::dispatch failed");
+        bfdebug_nhex(0, "vmi_op_handler::dispatch failed", vcpu->rax());
         vcpu->set_rax(FAILURE);
     })
 
