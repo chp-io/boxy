@@ -46,7 +46,7 @@ endif()
 if(ENABLE_BUILD_VMM)
     add_subproject(
         boxy_bfvmm vmm
-        DEPENDS bfvmm
+        DEPENDS bfvmm json
         SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/bfvmm
     )
 endif()
