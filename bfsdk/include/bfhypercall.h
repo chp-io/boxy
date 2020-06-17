@@ -1930,7 +1930,9 @@ hypercall_uart_ndec_op(uint16_t port, uint64_t val)
 #define hypercall_enum_domain_op__ldtr_access_rights 0xBF02000000020730
 #define hypercall_enum_domain_op__set_ldtr_access_rights 0xBF02000000020731
 
+#ifndef UART_MAX_BUFFER
 #define UART_MAX_BUFFER 0x4000
+#endif
 
 static inline domainid_t
 hypercall_domain_op__create_domain(void)

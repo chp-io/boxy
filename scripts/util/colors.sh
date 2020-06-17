@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2019 Assured Information Security, Inc.
+# Copyright (C) 2020 Assured Information Security, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,16 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-if(NOT DEFINED CACHE_DIR)
-    set(CACHE_DIR ${CMAKE_CURRENT_LIST_DIR}/cache)
-endif()
-
-file(MAKE_DIRECTORY ${CACHE_DIR})
-
-set(CMAKE_BUILD_TYPE Release)
-set(ENABLE_COMPILER_WARNINGS ON)
-
-set_bfm_vmm(boxy_vmm)
-list(APPEND EXTENSION
-    ${CMAKE_CURRENT_LIST_DIR}
-)
+BF_Esc='\e'
+BF_COLOR_RST="${BF_Esc}[m"
+BF_COLOR_RED="${BF_Esc}[91m"
+BF_COLOR_GRN="${BF_Esc}[92m"
+BF_COLOR_YLW="${BF_Esc}[93m"
+BF_COLOR_BLU="${BF_Esc}[94m"
+BF_COLOR_MAG="${BF_Esc}[95m"
+BF_COLOR_CYN="${BF_Esc}[96m"
+BF_COLOR_WHT="${BF_Esc}[97m"

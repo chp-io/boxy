@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2019 Assured Information Security, Inc.
+# Copyright (C) 2020 Assured Information Security, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,16 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-if(NOT DEFINED CACHE_DIR)
-    set(CACHE_DIR ${CMAKE_CURRENT_LIST_DIR}/cache)
-endif()
+# Helper script used instead of cmake -E copy_directory as the latter doesn't
+# support symbolic link no follow
+# e.g. ExternalProject_Add
 
-file(MAKE_DIRECTORY ${CACHE_DIR})
-
-set(CMAKE_BUILD_TYPE Release)
-set(ENABLE_COMPILER_WARNINGS ON)
-
-set_bfm_vmm(boxy_vmm)
-list(APPEND EXTENSION
-    ${CMAKE_CURRENT_LIST_DIR}
-)
+file(COPY "${SRC}/" DESTINATION "${DST}")
