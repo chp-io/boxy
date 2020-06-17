@@ -1,0 +1,2 @@
+source "$BR2_EXTERNAL_vmilinux_PATH/package/libvmi/Config.in"
+source "$BR2_EXTERNAL_vmilinux_PATH/package/vmilinux/Config.in"

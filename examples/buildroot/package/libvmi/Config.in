@@ -1,0 +1,16 @@
+config BR2_PACKAGE_LIBVMI
+    bool "libvmi"
+    depends on BR2_TOOLCHAIN_USES_GLIBC
+	depends on BR2_USE_WCHAR # glib2
+	depends on BR2_TOOLCHAIN_HAS_THREADS # glib2
+	depends on BR2_USE_MMU # glib2
+    select BR2_PACKAGE_LIBGLIB2
+    select BR2_PACKAGE_JSON_C
+    # BR2_STATIC_LIBS
+    help
+      LibVMI is a C library with Python bindings that makes it easy to monitor the
+      low-level details of a running virtual machine by viewing its memory, trapping
+      on hardware events, and accessing the vCPU registers. This is called virtual
+      machine introspection.
+
+      https://github.com/libvmi/libvmi

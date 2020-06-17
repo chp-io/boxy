@@ -73,6 +73,11 @@ set(BOXY_SOURCE_BFVMM_DIR ${BOXY_SOURCE_ROOT_DIR}/bfvmm
     "BOXY bfvmm source dir"
 )
 
+set(BOXY_SOURCE_EXAMPLES_DIR ${BOXY_SOURCE_ROOT_DIR}/examples
+    CACHE INTERNAL
+    "BOXY example source dir"
+)
+
 # ------------------------------------------------------------------------------
 # Links
 # ------------------------------------------------------------------------------
@@ -87,6 +92,20 @@ set(LINUX_URL_MD5 "bbe9d03b76f874444ff2839f74c982e6"
     "Linux URL MD5 hash"
 )
 
+if(NOT DEFINED BUILDROOT_VERSION)
+    set(BUILDROOT_VERSION "2020.02.2")
+endif()
+
+set(BUILDROOT_URL "https://buildroot.org/downloads/buildroot-${BUILDROOT_VERSION}.tar.gz"
+    CACHE INTERNAL FORCE
+    "Buildroot URL"
+)
+
+set(BUILDROOT_URL_MD5 "f288c13b4b51a50e2e06cea4b3869ca0"
+    CACHE INTERNAL FORCE
+    "Buildroot URL MD5 hash"
+)
+
 # ------------------------------------------------------------------------------
 # Boxy guest
 # ------------------------------------------------------------------------------
@@ -96,4 +115,11 @@ add_config(
     CONFIG_TYPE BOOL
     DEFAULT_VAL ON
     DESCRIPTION "Build a minimal Linux guest along with the VMM"
+)
+
+add_config(
+    CONFIG_NAME ENABLE_BUILD_EXAMPLES
+    CONFIG_TYPE BOOL
+    DEFAULT_VAL OFF
+    DESCRIPTION "Build guest examples showcasing Boxy with LibVMI"
 )

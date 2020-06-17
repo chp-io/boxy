@@ -39,6 +39,10 @@ if(ENABLE_BUILD_GUEST)
     include_dependency(BOXY_SOURCE_DEPENDS_DIR linux)
 endif()
 
+if(ENABLE_BUILD_GUEST AND ENABLE_BUILD_EXAMPLES)
+    include_dependency(BOXY_SOURCE_DEPENDS_DIR buildroot)
+endif()
+
 # ------------------------------------------------------------------------------
 # VMM
 # ------------------------------------------------------------------------------
@@ -86,3 +90,22 @@ if(NOT WIN32 AND NOT CYGWIN)
         DEPENDS bfintrinsics
     )
 endif()
+
+# ------------------------------------------------------------------------------
+# Examples
+# ------------------------------------------------------------------------------
+
+if(ENABLE_BUILD_EXAMPLES AND NOT WIN32 AND NOT CYGWIN)
+    add_subproject(
+        vmilinux userspace
+        SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/examples/vmilinux
+        DEPENDS bflinux
+    )
+endif()
+
+# ------------------------------------------------------------------------------
+# Validate Build
+# ------------------------------------------------------------------------------
+
+include(${CMAKE_CURRENT_LIST_DIR}/scripts/cmake/validate.cmake)
+validate_build()

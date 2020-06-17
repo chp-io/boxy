@@ -1,0 +1,7 @@
+config BR2_PACKAGE_VMILINUX
+    bool "vmilinux"
+    depends on BR2_INSTALL_LIBSTDCPP
+    select BR2_PACKAGE_LIBVMI
+    help
+      vmilinux starts a vmi app with populated cmdline parsed from the kernel's
+      cmdline.
