@@ -1,0 +1,1 @@
+console=uart,io,0x3f8,115200n8 vmi=/usr/bin/vmi-module-list,dom0
