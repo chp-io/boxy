@@ -70,7 +70,7 @@ vmi_op_handler::vmi_op__memmap_ept(vcpu *vcpu)
 
     if(guest_map.is_2m(gpa1))
     {
-        bfdebug_info(0, "vmi_op: guest_map is 2m");
+        bfdebug_info(10, "vmi_op: guest_map is 2m");
         auto gpa1_2m = bfn::upper(gpa1, ::intel_x64::ept::pd::from);
         bfvmm::intel_x64::ept::identity_map_convert_2m_to_4k(guest_map, gpa1_2m);
     }
@@ -174,7 +174,7 @@ bool
 vmi_op_handler::cpuid_vmi(vcpu_t *vcpu)
 {
     auto boxy_vcpu = static_cast<boxy::intel_x64::vcpu *>(vcpu);
-    bfalert_ndec(0, "vmi_op: VM Introspection requested from domU id:", boxy_vcpu->domid());
+    bfalert_ndec(10, "vmi_op: VM Introspection requested from domU id:", boxy_vcpu->domid());
     vcpu->set_rax(bf_vmi_cpuid_rax);
     vcpu->set_rbx(bf_vmi_cpuid_rbx);
     vcpu->set_rcx(bf_vmi_cpuid_rcx);
