@@ -54,6 +54,14 @@ public:
 
 private:
 
+    void gva_to_gpa(vcpu *vcpu);
+
+    std::tuple<domain *, uint64_t, domain *, uint64_t, uint32_t,
+        bfvmm::intel_x64::ept::mmap::attr_type,
+        bfvmm::intel_x64::ept::mmap::memory_type> map_range_init(vcpu *vp);
+    void map_range(vcpu *vcpu);
+    void unmap_range(vcpu *vcpu);
+
     bool dispatch(vcpu *vcpu);
 
 private:

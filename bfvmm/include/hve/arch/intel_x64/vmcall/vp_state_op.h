@@ -54,6 +54,10 @@ public:
 
 private:
 
+    vcpu *init_target(vcpu *vp);
+    void reg_val(vcpu *vp);
+    void msr_val(vcpu *vp);
+
     bool dispatch(vcpu *vcpu);
 
 private:

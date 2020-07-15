@@ -205,6 +205,46 @@ public:
     ///
     void release(uintptr_t gpa);
 
+    /// Share Range
+    ///
+    /// Share a range of 4k guest physical addresses from foreign mmap using EPT
+    /// effectivily remapping our guest physical addresses to their host
+    /// physical addresses.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param gpa the guest physical address to remap
+    /// @param foreign_gpa the foreign guest physical address to remap from
+    /// @param foreign_mmap the foreign mmap to remap from
+    /// @param size the number of GPA to remap
+    /// @param attr the map permissions apply to our GPAs being remapped
+    /// @param cache the memory type for our remapped GPAs
+    ///
+    void share_range(
+        uintptr_t gpa,
+        uintptr_t foreign_gpa, bfvmm::intel_x64::ept::mmap &foreign_mmap,
+        uint32_t size,
+        bfvmm::intel_x64::ept::mmap::attr_type attr,
+        bfvmm::intel_x64::ept::mmap::memory_type cache);
+
+    /// Unshare Range
+    ///
+    /// Unshare a range of 4k guest physical addresses previously assigned with
+    /// share_range.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param gpa the guest physical address to restore
+    /// @param size the number of GPA to restore
+    /// @param attr the map permissions apply to our GPAs being remapped
+    /// @param cache the memory type for our remapped GPAs
+    void unshare_range(
+        uintptr_t gpa, uint32_t size,
+        bfvmm::intel_x64::ept::mmap::attr_type attr,
+        bfvmm::intel_x64::ept::mmap::memory_type cache);
+
 public:
 
     /// Set UART
@@ -431,6 +471,9 @@ private:
     bfvmm::intel_x64::ept::mmap m_ept_map{};
     mv_mdl_t m_e820_map{};
     bfvmm::intel_x64::vcpu_global_state_t m_vcpu_global_state{};
+
+    std::unordered_map<uintptr_t, uint32_t> m_range_sizes;
+    std::mutex m_mutex;
 
     uart::port_type m_uart_port{};
     uart::port_type m_pt_uart_port{};

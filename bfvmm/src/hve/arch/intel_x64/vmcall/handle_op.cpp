@@ -30,10 +30,6 @@ handle_op_handler::handle_op_handler(
 ) :
     m_vcpu{vcpu}
 {
-    if (vcpu->is_domU()) {
-        return;
-    }
-
     vcpu->add_vmcall_handler({&handle_op_handler::dispatch, this});
 }
 

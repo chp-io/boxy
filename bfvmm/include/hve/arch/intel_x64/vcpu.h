@@ -388,6 +388,27 @@ public:
     ///
     void halt(const std::string &str = {}) override;
 
+public:
+
+    //--------------------------------------------------------------------------
+    // Model-specific registers
+    //--------------------------------------------------------------------------
+
+    /// Get MSR Register Value
+    ///
+    /// @param msr the msr to get
+    ///
+    VIRTUAL uint64_t msr(uint32_t msr) const;
+
+    /// Set MSR Register Value
+    ///
+    /// @param msr the msr to set
+    /// @param val the value to set the msr with
+    ///
+    VIRTUAL void set_msr(uint32_t msr, uint64_t val);
+
+    /// @cond
+
 private:
 
     void write_dom0_guest_state(domain *domain);

@@ -74,7 +74,7 @@ _mv_handle_op_close_handle:
 
         mov r10, rdi
 
-        mov rax, 0x764D000000010000
+        mov rax, 0x764D000000010001
         vmcall
 
         ret
@@ -103,6 +103,139 @@ _mv_vm_properties_op_set_e820:
         pop r12
         ret
         .size _mv_vm_properties_op_set_e820, .-_mv_vm_properties_op_set_e820
+
+/* -------------------------------------------------------------------------- */
+/* _mv_vm_state_op_gva_to_gpa                                                 */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vm_state_op_gva_to_gpa
+        .type   _mv_vm_state_op_gva_to_gpa, @function
+_mv_vm_state_op_gva_to_gpa:
+
+        push r12
+        push r13
+
+        mov r10, rdi
+        mov r11, rsi
+        mov r12, rdx
+        mov r13, rcx
+
+        mov rax, 0x764D000000030008
+        vmcall
+
+        mov [r8], r10
+        mov [r9], r11
+
+        pop r13
+        pop r12
+        ret
+        .size _mv_vm_state_op_gva_to_gpa, .-_mv_vm_state_op_gva_to_gpa
+
+/* -------------------------------------------------------------------------- */
+/* _mv_vm_state_op_map_range                                                  */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vm_state_op_map_range
+        .type   _mv_vm_state_op_map_range, @function
+_mv_vm_state_op_map_range:
+
+        push r12
+        push r13
+        push r14
+        push r15
+
+        mov r10, rdi
+        mov r11, rsi
+        mov r12, rdx
+        mov r13, rcx
+        mov r14, r8
+        mov r15, r9
+
+        mov rax, 0x764D000000030009
+        vmcall
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        ret
+        .size _mv_vm_state_op_map_range, .-_mv_vm_state_op_map_range
+
+/* -------------------------------------------------------------------------- */
+/* _mv_vm_state_op_unmap_range                                                */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vm_state_op_unmap_range
+        .type   _mv_vm_state_op_unmap_range, @function
+_mv_vm_state_op_unmap_range:
+
+        push r12
+        push r13
+        push r14
+        push r15
+
+        mov r10, rdi
+        mov r11, rsi
+        mov r12, rdx
+        mov r13, rcx
+        mov r14, r8
+        mov r15, r9
+
+        mov rax, 0x764D00000003000A
+        vmcall
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        ret
+        .size _mv_vm_state_op_unmap_range, .-_mv_vm_state_op_unmap_range
+
+/* -------------------------------------------------------------------------- */
+/* _mv_vp_state_op_reg_val                                                    */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vp_state_op_reg_val
+        .type   _mv_vp_state_op_reg_val, @function
+_mv_vp_state_op_reg_val:
+
+        push r12
+
+        mov r10, rdi
+        mov r11, rsi
+        mov r12, rdx
+
+        mov rax, 0x764D000000070000
+        vmcall
+
+        mov [rcx], r10
+
+        pop r12
+        ret
+        .size _mv_vp_state_op_reg_val, .-_mv_vp_state_op_reg_val
+
+/* -------------------------------------------------------------------------- */
+/* _mv_vp_state_op_msr_val                                                    */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vp_state_op_msr_val
+        .type   _mv_vp_state_op_msr_val, @function
+_mv_vp_state_op_msr_val:
+
+        push r12
+
+        mov r10, rdi
+        mov r11, rsi
+        mov r12, rdx
+
+        mov rax, 0x764D000000070004
+        vmcall
+
+        mov [rcx], r10
+
+        pop r12
+        ret
+        .size _mv_vp_state_op_msr_val, .-_mv_vp_state_op_msr_val
 
 /* -------------------------------------------------------------------------- */
 /* !!! WARNING DEPRECATED !!!                                                 */
