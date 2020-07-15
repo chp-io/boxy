@@ -69,7 +69,7 @@ _mv_handle_op_close_handle PROC
 
         mov r10, rcx
 
-        mov rax, 764D000000010000h
+        mov rax, 764D000000010001h
         vmcall
 
         ret

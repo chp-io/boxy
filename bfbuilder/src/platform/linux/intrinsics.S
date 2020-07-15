@@ -74,7 +74,7 @@ _mv_handle_op_close_handle:
 
         mov r10, rdi
 
-        mov rax, 0x764D000000010000
+        mov rax, 0x764D000000010001
         vmcall
 
         ret
