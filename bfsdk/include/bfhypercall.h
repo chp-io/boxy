@@ -1059,11 +1059,11 @@ mv_vm_state_op_gva_to_gpa(
     }
 
     if (MV_NULL == gpa) {
-        return MV_STATUS_INVALID_PARAMS3;
+        return MV_STATUS_INVALID_PARAMS4;
     }
 
     if (MV_NULL == flags) {
-        return MV_STATUS_INVALID_PARAMS3;
+        return MV_STATUS_INVALID_PARAMS5;
     }
 
     return _mv_vm_state_op_gva_to_gpa(
