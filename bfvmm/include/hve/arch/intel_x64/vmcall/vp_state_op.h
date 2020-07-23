@@ -54,6 +54,8 @@ public:
 
 private:
 
+    void reg_val(vcpu *vcpu);
+
     bool dispatch(vcpu *vcpu);
 
 private:

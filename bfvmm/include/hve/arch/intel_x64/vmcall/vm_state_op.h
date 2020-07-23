@@ -54,6 +54,9 @@ public:
 
 private:
 
+    void gva_to_gpa(vcpu *vcpu);
+    void map_range(vcpu *vcpu);
+
     bool dispatch(vcpu *vcpu);
 
 private:

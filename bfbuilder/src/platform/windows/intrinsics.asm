@@ -100,6 +100,108 @@ _mv_vm_properties_op_set_e820 PROC
 _mv_vm_properties_op_set_e820 ENDP
 
 ;-------------------------------------------------------------------------------
+; _mv_vm_state_op_gva_to_gpa
+;-------------------------------------------------------------------------------
+
+_mv_vm_state_op_gva_to_gpa PROC
+
+        push r12
+        push r13
+
+        mov r10, rcx
+        mov r11, rdx
+        mov r12, r8
+        mov r13, r9
+
+        mov rax, 764D000000030008h
+        vmcall
+
+        mov r8, [rsp+28h+8*2]
+        mov r9, [rsp+30h+8*2]
+
+        mov [r8], r10
+        mov [r9], r11
+
+        pop r13
+        pop r12
+        ret
+
+_mv_vm_state_op_gva_to_gpa ENDP
+
+;-------------------------------------------------------------------------------
+; _mv_vm_state_op_map_range
+;-------------------------------------------------------------------------------
+
+_mv_vm_state_op_map_range PROC
+
+        push r12
+        push r13
+        push r14
+        push r15
+
+        mov r10, rcx
+        mov r11, rdx
+        mov r12, r8
+        mov r13, r9
+        mov r14, [rsp+28h+8*4]
+        mov r15, [rsp+30h+8*4]
+
+        mov rax, 764D000000030009h
+        vmcall
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        ret
+
+_mv_vm_state_op_map_range ENDP
+
+;-------------------------------------------------------------------------------
+; _mv_vp_state_op_reg_val
+;-------------------------------------------------------------------------------
+
+_mv_vp_state_op_reg_val PROC
+
+        push r12
+
+        mov r10, rcx
+        mov r11, rdx
+        mov r12, r8
+
+        mov rax, 764D000000070000h
+        vmcall
+
+        mov [r9], r10
+
+        pop r12
+        ret
+
+_mv_vp_state_op_reg_val ENDP
+
+;-------------------------------------------------------------------------------
+; _mv_vp_state_op_msr_val
+;-------------------------------------------------------------------------------
+
+_mv_vp_state_op_msr_val PROC
+
+        push r12
+
+        mov r10, rcx
+        mov r11, rdx
+        mov r12, r8
+
+        mov rax, 764D000000070004h
+        vmcall
+
+        mov [r9], r10
+
+        pop r12
+        ret
+
+_mv_vp_state_op_msr_val ENDP
+
+;-------------------------------------------------------------------------------
 ; !!! WARNING DEPRECATED !!!
 ;-------------------------------------------------------------------------------
 
