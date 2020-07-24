@@ -399,6 +399,8 @@ public:
     /// MSR Registers
     ///
 
+    VIRTUAL uint64_t msr(uint32_t addr) const;
+    VIRTUAL void set_msr(uint32_t msr, uint64_t val);
     VIRTUAL uint64_t ia32_kernel_gs_base() const;
     VIRTUAL void ia32_kernel_gs_base(uint64_t val);
     VIRTUAL uint64_t ia32_lstar() const;

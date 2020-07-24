@@ -36,67 +36,31 @@ vp_state_op_handler::vp_state_op_handler(
 
 #define case_reg(name)                                                         \
     case mv_reg_t_ ## name:                                                    \
-        reg_val = _vp->name();                                                 \
+        reg_val = target->name();                                              \
         break
 
 #define case_reg2(name0, name1)                                                \
     case mv_reg_t_ ## name0:                                                   \
-        reg_val = _vp->name1();                                                \
+        reg_val = target->name1();                                             \
         break
 
 #define case_reg_vmcs(name)                                                    \
     case mv_reg_t_ ## name:                                                    \
-        _vp->load();                                                           \
-        reg_val = _vp->name();                                                 \
+        target->load();                                                        \
+        reg_val = target->name();                                              \
         vp->load();                                                            \
         break
 
 #define case_reg_vmcs2(name0, name1)                                           \
     case mv_reg_t_ ## name0:                                                   \
-        _vp->load();                                                           \
-        reg_val = _vp->name1();                                                \
+        target->load();                                                        \
+        reg_val = target->name1();                                             \
         vp->load();                                                            \
         break
 
 void
-vp_state_op_handler::reg_val(vcpu *vp)
+vp_state_op_handler::reg_val(vcpu *vp, vcpu *target)
 {
-    vcpu *_vp;
-
-    // For now we only allow a domU to target its parent
-    // either via MV_VPID_PARENT or with its parent vp id
-    switch (vp->r11()) {
-        case MV_VPID_SELF:
-            vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_SELF);
-            return;
-        case MV_VPID_PARENT:
-            if (vp->is_dom0()) {
-                vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_PARENT);
-                return;
-            }
-            _vp = vp->parent_vcpu();
-            break;
-        case MV_VPID_ANY:
-            vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_ANY);
-            return;
-        default:
-            if (vp->is_dom0()) {
-                // TODO check is child of current vp
-            }
-            else if (vp->parent_vcpu()->id() != vp->r11()) {
-                vp->set_rax(MV_STATUS_FAILURE_UNSUPPORTED_HYPERCALL);
-                return;
-            }
-
-            try {
-                _vp = get_vcpu(vp->r11());
-            }
-            catchall({
-                vp->set_rax(MV_STATUS_INVALID_VPID_UNKNOWN);
-                return;
-            })
-    }
-
     mv_reg_t reg = static_cast<mv_reg_t>(vp->r12());
     uint64_t reg_val = 0;
 
@@ -181,24 +145,117 @@ vp_state_op_handler::reg_val(vcpu *vp)
     vp->set_rax(MV_STATUS_SUCCESS);
 }
 
-bool
-vp_state_op_handler::dispatch(vcpu *vcpu)
+void
+vp_state_op_handler::msr_val(vcpu *vp, vcpu *target)
 {
-    if (mv_hypercall_opcode(vcpu->rax()) != MV_VP_STATE_OP_VAL) {
+    uint32_t msr = static_cast<uint32_t>(vp->r12());
+    uint64_t msr_val = 0;
+
+    switch (msr) {
+
+#define case_msr_vmcs(msr, name)                                               \
+        case msr:                                                              \
+            target->load();                                                    \
+            msr_val = vmcs_n::guest_## name ::get();                           \
+            vp->load();                                                        \
+            break
+
+        case_msr_vmcs(::x64::msrs::ia32_pat::addr, ia32_pat);
+        case_msr_vmcs(::intel_x64::msrs::ia32_efer::addr, ia32_efer);
+        case_msr_vmcs(::intel_x64::msrs::ia32_fs_base::addr, fs_base);
+        case_msr_vmcs(::intel_x64::msrs::ia32_gs_base::addr, gs_base);
+        case_msr_vmcs(::intel_x64::msrs::ia32_sysenter_cs::addr, ia32_sysenter_cs);
+        case_msr_vmcs(::intel_x64::msrs::ia32_sysenter_eip::addr, ia32_sysenter_eip);
+        case_msr_vmcs(::intel_x64::msrs::ia32_sysenter_esp::addr, ia32_sysenter_esp);
+
+        default:
+            try {
+                msr_val = target->msr(msr);
+            }
+            catchall({
+                bferror_nhex(0, "vp_state_op unhandled msr:", msr);
+                vp->set_rax(MV_STATUS_INVALID_PARAMS2);
+                return;
+            })
+    }
+
+    vp->set_r10(msr_val);
+    vp->set_rax(MV_STATUS_SUCCESS);
+}
+
+bool
+vp_state_op_handler::check_and_init_target(vcpu *vp, vcpu **target)
+{
+    // For now we only allow a domU to target its parent
+    // either via MV_VPID_PARENT or with its parent vp id
+    switch (vp->r11()) {
+        case MV_VPID_SELF:
+            vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_SELF);
+            return false;
+        case MV_VPID_PARENT:
+            if (vp->is_dom0()) {
+                vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_PARENT);
+                return false;
+            }
+            *target = vp->parent_vcpu();
+            break;
+        case MV_VPID_ANY:
+            vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_ANY);
+            return false;
+        default:
+            if (vp->is_dom0()) {
+                // TODO check if is child of current vp
+            }
+            else if (vp->parent_vcpu()->id() != vp->r11()) {
+                vp->set_rax(MV_STATUS_FAILURE_UNSUPPORTED_HYPERCALL);
+                return false;
+            }
+
+            try {
+                *target = get_vcpu(vp->r11());
+            }
+            catchall({
+                vp->set_rax(MV_STATUS_INVALID_VPID_UNKNOWN);
+                return false;
+            })
+    }
+
+    return true;
+}
+
+bool
+vp_state_op_handler::dispatch(vcpu *vp)
+{
+    if (mv_hypercall_opcode(vp->rax()) != MV_VP_STATE_OP_VAL) {
         return false;
     }
 
     // TODO: Validate the handle
 
-    switch (mv_hypercall_index(vcpu->rax())) {
+    // Note:
+    //
+    // A target vcpu is the vcpu on which we want to perform the operation to
+    // get or set a register, msr, etc. depending on the hypercall.
+    // All vp_state_op hypercalls use r11 (i.e. vpid) to retrieve it as per
+    // MicroV specifications.
+    vcpu *target;
+
+    switch (mv_hypercall_index(vp->rax())) {
         case MV_VP_STATE_OP_REG_VAL_IDX_VAL:
-            this->reg_val(vcpu);
+            if (check_and_init_target(vp, &target)) {
+                this->reg_val(vp, target);
+            }
+            return true;
+        case MV_VP_STATE_OP_MSR_VAL_IDX_VAL:
+            if (check_and_init_target(vp, &target)) {
+                this->msr_val(vp, target);
+            }
             return true;
         default:
             break;
     };
 
-    vcpu->set_rax(MV_STATUS_FAILURE_UNKNOWN_HYPERCALL);
+    vp->set_rax(MV_STATUS_FAILURE_UNKNOWN_HYPERCALL);
     return true;
 }
 

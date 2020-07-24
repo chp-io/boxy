@@ -312,6 +312,18 @@ vcpu::halt(const std::string &str)
 //------------------------------------------------------------------------------
 
 uint64_t
+vcpu::msr(uint32_t addr) const
+{
+    return m_msr_handler.get_msr(addr);
+}
+
+void
+vcpu::set_msr(uint32_t msr, uint64_t val)
+{
+    m_msr_handler.set_msr(msr, val);
+}
+
+uint64_t
 vcpu::ia32_kernel_gs_base() const
 {
     return m_msr_handler.get_msr(::x64::msrs::ia32_kernel_gs_base::addr);
