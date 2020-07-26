@@ -162,6 +162,36 @@ _mv_vm_state_op_map_range:
         .size _mv_vm_state_op_map_range, .-_mv_vm_state_op_map_range
 
 /* -------------------------------------------------------------------------- */
+/* _mv_vm_state_op_unmap_range                                                  */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vm_state_op_unmap_range
+        .type   _mv_vm_state_op_unmap_range, @function
+_mv_vm_state_op_unmap_range:
+
+        push r12
+        push r13
+        push r14
+        push r15
+
+        mov r10, rdi
+        mov r11, rsi
+        mov r12, rdx
+        mov r13, rcx
+        mov r14, r8
+        mov r15, r9
+
+        mov rax, 0x764D00000003000A
+        vmcall
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        ret
+        .size _mv_vm_state_op_unmap_range, .-_mv_vm_state_op_unmap_range
+
+/* -------------------------------------------------------------------------- */
 /* _mv_vp_state_op_reg_val                                                    */
 /* -------------------------------------------------------------------------- */
 

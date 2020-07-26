@@ -158,6 +158,35 @@ _mv_vm_state_op_map_range PROC
 _mv_vm_state_op_map_range ENDP
 
 ;-------------------------------------------------------------------------------
+; _mv_vm_state_op_unmap_range
+;-------------------------------------------------------------------------------
+
+_mv_vm_state_op_unmap_range PROC
+
+        push r12
+        push r13
+        push r14
+        push r15
+
+        mov r10, rcx
+        mov r11, rdx
+        mov r12, r8
+        mov r13, r9
+        mov r14, [rsp+28h+8*4]
+        mov r15, [rsp+30h+8*4]
+
+        mov rax, 764D00000003000Ah
+        vmcall
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        ret
+
+_mv_vm_state_op_unmap_range ENDP
+
+;-------------------------------------------------------------------------------
 ; _mv_vp_state_op_reg_val
 ;-------------------------------------------------------------------------------
 

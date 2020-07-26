@@ -56,6 +56,7 @@ private:
 
     void gva_to_gpa(vcpu *vcpu);
     void map_range(vcpu *vcpu);
+    void unmap_range(vcpu *vcpu);
 
     bool dispatch(vcpu *vcpu);
 
