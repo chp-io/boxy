@@ -76,7 +76,6 @@ vm_state_op_handler::map_range(vcpu *vp)
     auto flags{vp->r15()};
     auto size{flags & 0x00000000FFFFFFFF};
 
-    domain *src_vm;
     domain *dst_vm;
     boxy::intel_x64::vcpu *src_vp;
     boxy::intel_x64::vcpu *dst_vp;
@@ -140,6 +139,8 @@ vm_state_op_handler::map_range(vcpu *vp)
         try {
             auto [entry, unused0] = dst_vm->ept().entry(dst_gpa);
             auto [hpa, unused1] = src_vp->gpa_to_hpa(src_gpa);
+            auto dst_hpa = pt::entry::phys_addr::get(entry);
+            remaps[{dst_vmid, dst_gpa}] = dst_hpa;
             pt::entry::phys_addr::set(entry, hpa);
             // TODO permission and cache type
         }
@@ -161,7 +162,6 @@ vm_state_op_handler::unmap_range(vcpu *vp)
     auto flags{vp->r15()};
     auto size{flags & 0x00000000FFFFFFFF};
 
-    domain *src_vm;
     domain *dst_vm;
     boxy::intel_x64::vcpu *src_vp;
     boxy::intel_x64::vcpu *dst_vp;
@@ -172,7 +172,7 @@ vm_state_op_handler::unmap_range(vcpu *vp)
             break;
         default:
             throw std::runtime_error(
-                "map_range: non-root source is not yet implemented");
+                "unmap_range: non-root source is not yet implemented");
     }
 
     switch (dst_vmid) {
@@ -182,7 +182,7 @@ vm_state_op_handler::unmap_range(vcpu *vp)
             break;
         default:
             throw std::runtime_error(
-                "map_range: non-self destination is not yet implemented");
+                "unmap_range: non-self destination is not yet implemented");
     }
 
     using namespace ::intel_x64::ept;
@@ -208,13 +208,13 @@ vm_state_op_handler::unmap_range(vcpu *vp)
 
         // TODO: Add GPA donate support
         vp->set_rax(MV_STATUS_INVALID_PARAMS5);
-        bfdebug_info(0, "map_range: page donation is not yet implemented");
+        bfdebug_info(0, "unmap_range: page donation is not yet implemented");
         return;
     }
 
     if (size == 0) {
         vp->set_rax(MV_STATUS_INVALID_PARAMS5);
-        bfdebug_info(0, "map_range: size of 0 was requested.");
+        bfdebug_info(0, "unmap_range: size of 0 was requested.");
         return;
     }
 
@@ -224,12 +224,15 @@ vm_state_op_handler::unmap_range(vcpu *vp)
 
         try {
             auto [entry, unused0] = dst_vm->ept().entry(dst_gpa);
-            auto [hpa, unused1] = dst_vp->gpa_to_hpa(dst_gpa);
-            pt::entry::phys_addr::set(entry, hpa);
+            auto dst_hpa = remaps[{dst_vmid, dst_gpa}];
+            remaps.erase({dst_vmid, dst_gpa});
+
+            pt::entry::phys_addr::set(entry, dst_hpa);
+
             // TODO permission and cache type
         }
         catchall({
-            throw std::runtime_error("map_range failed");
+            throw std::runtime_error("unmap_range failed");
         })
     }
     ::intel_x64::vmx::invept_global();

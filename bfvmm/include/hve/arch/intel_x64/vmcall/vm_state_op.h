@@ -64,6 +64,18 @@ private:
 
     vcpu *m_vcpu;
 
+    using remap_key = std::pair<domain::domainid_type,uint64_t>;
+    struct remap_hash
+    {
+        template <class T1, class T2>
+        std::size_t operator() (const std::pair<T1, T2> &pair) const
+        {
+            return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
+        }
+    };
+
+    std::unordered_map<remap_key,uint64_t,remap_hash> remaps;
+
 public:
 
     /// @cond
