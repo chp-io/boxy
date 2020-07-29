@@ -66,23 +66,29 @@ vm_state_op_handler::gva_to_gpa(vcpu *vcpu)
     vcpu->set_rax(MV_STATUS_SUCCESS);
 }
 
-void
-vm_state_op_handler::map_range(vcpu *vp)
+inline std::tuple<domain*,uint64_t,domain*,uint64_t,uint32_t,
+    bfvmm::intel_x64::ept::mmap::attr_type,
+    bfvmm::intel_x64::ept::mmap::memory_type>
+vm_state_op_handler::map_range_init(vcpu *vp)
 {
     auto src_vmid{vp->r11()};
     auto src_gpa{vp->r12()};
     auto dst_vmid{vp->r13()};
     auto dst_gpa{vp->r14()};
     auto flags{vp->r15()};
-    auto size{flags & 0x00000000FFFFFFFF};
+    auto size{(flags & 0x00000000FFFFFFFF) != 0 ?: 1};
 
+    using namespace bfvmm::intel_x64::ept;
+
+    mmap::attr_type attr = mmap::attr_type::read_only;
+    mmap::memory_type cache = mmap::memory_type::write_back;
+
+    domain *src_vm;
     domain *dst_vm;
-    boxy::intel_x64::vcpu *src_vp;
-    boxy::intel_x64::vcpu *dst_vp;
 
     switch (src_vmid) {
         case MV_VMID_ROOT:
-            src_vp = vp->parent_vcpu();
+            src_vm = get_domain(0);
             break;
         default:
             throw std::runtime_error(
@@ -92,7 +98,6 @@ vm_state_op_handler::map_range(vcpu *vp)
     switch (dst_vmid) {
         case MV_VMID_SELF:
             dst_vm = get_domain(vp->domid());
-            dst_vp = vp;
             break;
         default:
             throw std::runtime_error(
@@ -102,52 +107,88 @@ vm_state_op_handler::map_range(vcpu *vp)
     using namespace ::intel_x64::ept;
 
     // src REVZ must be zero
+
     if (bfn::lower(src_gpa, pt::from)) {
         vp->set_rax(MV_STATUS_INVALID_PARAMS2);
-        return;
+        return {};
     }
 
     // dst REVZ must be zero
+
     if (bfn::lower(dst_gpa, pt::from)) {
         vp->set_rax(MV_STATUS_INVALID_PARAMS4);
-        return;
+        return {};
     }
+
+    // TODO donate and zombie flags
 
     if (flags & MV_GPA_FLAG_DONATE) {
         // Only the root VM is allowed to donate
         if (vp->is_domU()) {
             vp->set_rax(MV_STATUS_INVALID_PARAMS5);
-            return;
+            return {};
         }
 
-        // TODO: Add GPA donate support
         vp->set_rax(MV_STATUS_INVALID_PARAMS5);
         bfdebug_info(0, "map_range: page donation is not yet implemented");
+        return {};
+    }
+
+    // Memory access type
+
+    switch ((flags >> 32) & 0x3LLU) {
+        case 0:
+            // default
+            break;
+        case 1: attr = mmap::attr_type::read_only; break;
+        case 2: attr = mmap::attr_type::write_only; break;
+        case 3: attr = mmap::attr_type::read_write; break;
+        case 4: attr = mmap::attr_type::execute_only; break;
+        case 5: attr = mmap::attr_type::read_execute; break;
+        case 6: attr = mmap::attr_type::read_write_execute; break;
+        default:
+            vp->set_rax(MV_STATUS_INVALID_PARAMS5);
+            return {};
+    }
+
+    // Cacheability
+
+    switch ((flags >> 35) & 0x7LLU) {
+        case 0x00:
+            // default
+            break;
+
+        case 0x01: cache = mmap::memory_type::uncacheable; break;
+        // TODO: case 0x02 uncacheable_minus
+        case 0x04: cache = mmap::memory_type::write_combining; break;
+        // TODO: case 0x08 write_combining_plus
+        case 0x10: cache = mmap::memory_type::write_through; break;
+        case 0x20: cache = mmap::memory_type::write_back; break;
+        case 0x40: cache = mmap::memory_type::write_protected; break;
+        default:
+            vp->set_rax(MV_STATUS_INVALID_PARAMS5);
+            return {};
+    }
+
+    return {src_vm, src_gpa, dst_vm, dst_gpa, size, attr, cache};
+}
+
+void
+vm_state_op_handler::map_range(vcpu *vp)
+{
+    auto [src_vm, src_gpa, dst_vm, dst_gpa, size, attr, cache] =
+        map_range_init(vp);
+
+    if ((vp->rax() >> 48) == 0xDEAD) {
         return;
     }
 
-    if (size == 0) {
-        vp->set_rax(MV_STATUS_INVALID_PARAMS5);
-        bfdebug_info(0, "map_range: size of 0 was requested.");
-        return;
+    try {
+        dst_vm->share_range(dst_gpa, src_gpa, src_vm->ept(), size, attr, cache);
     }
-
-    for (auto _src_gpa = src_gpa, _dst_gpa = dst_gpa;
-        _src_gpa < (src_gpa + (size << pt::from));
-        _src_gpa += (0x1ULL << pt::from), _dst_gpa += (0x1ULL << pt::from)) {
-
-        try {
-            auto [entry, unused0] = dst_vm->ept().entry(dst_gpa);
-            auto [hpa, unused1] = src_vp->gpa_to_hpa(src_gpa);
-            auto dst_hpa = pt::entry::phys_addr::get(entry);
-            remaps[{dst_vmid, dst_gpa}] = dst_hpa;
-            pt::entry::phys_addr::set(entry, hpa);
-            // TODO permission and cache type
-        }
-        catchall({
-            throw std::runtime_error("map_range failed");
-        })
-    }
+    catchall({
+        throw std::runtime_error("map_range failed");
+    })
 
     vp->set_rax(MV_STATUS_SUCCESS);
 }
@@ -155,87 +196,19 @@ vm_state_op_handler::map_range(vcpu *vp)
 void
 vm_state_op_handler::unmap_range(vcpu *vp)
 {
-    auto src_vmid{vp->r11()};
-    auto src_gpa{vp->r12()};
-    auto dst_vmid{vp->r13()};
-    auto dst_gpa{vp->r14()};
-    auto flags{vp->r15()};
-    auto size{flags & 0x00000000FFFFFFFF};
+    auto [src_vm, src_gpa, dst_vm, dst_gpa, size, attr, cache] =
+        map_range_init(vp);
 
-    domain *dst_vm;
-    boxy::intel_x64::vcpu *src_vp;
-    boxy::intel_x64::vcpu *dst_vp;
-
-    switch (src_vmid) {
-        case MV_VMID_ROOT:
-            src_vp = vp->parent_vcpu();
-            break;
-        default:
-            throw std::runtime_error(
-                "unmap_range: non-root source is not yet implemented");
-    }
-
-    switch (dst_vmid) {
-        case MV_VMID_SELF:
-            dst_vm = get_domain(vp->domid());
-            dst_vp = vp;
-            break;
-        default:
-            throw std::runtime_error(
-                "unmap_range: non-self destination is not yet implemented");
-    }
-
-    using namespace ::intel_x64::ept;
-
-    // src REVZ must be zero
-    if (bfn::lower(src_gpa, pt::from)) {
-        vp->set_rax(MV_STATUS_INVALID_PARAMS2);
+    if ((vp->rax() >> 48) == 0xDEAD) {
         return;
     }
 
-    // dst REVZ must be zero
-    if (bfn::lower(dst_gpa, pt::from)) {
-        vp->set_rax(MV_STATUS_INVALID_PARAMS4);
-        return;
+    try {
+        dst_vm->unshare_range(dst_gpa, size);
     }
-
-    if (flags & MV_GPA_FLAG_DONATE) {
-        // Only the root VM is allowed to donate
-        if (vp->is_domU()) {
-            vp->set_rax(MV_STATUS_INVALID_PARAMS5);
-            return;
-        }
-
-        // TODO: Add GPA donate support
-        vp->set_rax(MV_STATUS_INVALID_PARAMS5);
-        bfdebug_info(0, "unmap_range: page donation is not yet implemented");
-        return;
-    }
-
-    if (size == 0) {
-        vp->set_rax(MV_STATUS_INVALID_PARAMS5);
-        bfdebug_info(0, "unmap_range: size of 0 was requested.");
-        return;
-    }
-
-    for (auto _src_gpa = src_gpa, _dst_gpa = dst_gpa;
-        _src_gpa < (src_gpa + (size << pt::from));
-        _src_gpa += (0x1ULL << pt::from), _dst_gpa += (0x1ULL << pt::from)) {
-
-        try {
-            auto [entry, unused0] = dst_vm->ept().entry(dst_gpa);
-            auto dst_hpa = remaps[{dst_vmid, dst_gpa}];
-            remaps.erase({dst_vmid, dst_gpa});
-
-            pt::entry::phys_addr::set(entry, dst_hpa);
-
-            // TODO permission and cache type
-        }
-        catchall({
-            throw std::runtime_error("unmap_range failed");
-        })
-    }
-    ::intel_x64::vmx::invept_global();
+    catchall({
+        throw std::runtime_error("map_range failed");
+    })
 
     vp->set_rax(MV_STATUS_SUCCESS);
 }

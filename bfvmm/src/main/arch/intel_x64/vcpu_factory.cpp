@@ -21,6 +21,7 @@
 
 #include <bfvmm/vcpu/vcpu_factory.h>
 #include <hve/arch/intel_x64/vcpu.h>
+#include <bfcallonce.h>
 
 namespace bfvmm
 {
@@ -29,12 +30,16 @@ std::unique_ptr<vcpu>
 vcpu_factory::make(vcpuid::type vcpuid, void *data)
 {
     using namespace boxy::intel_x64;
-    static domain dom0{0};
+    static bfn::once_flag flag;
 
     if (vcpuid::is_host_vcpu(vcpuid)) {
+        bfn::call_once(flag, [&] {
+            g_dm->create(0, nullptr);
+        });
+
         return
             std::make_unique<boxy::intel_x64::vcpu>(
-                vcpuid, &dom0
+                vcpuid, get_domain(0)
             );
     }
     else {

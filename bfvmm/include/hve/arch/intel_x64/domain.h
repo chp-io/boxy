@@ -205,6 +205,14 @@ public:
     ///
     void release(uintptr_t gpa);
 
+    void share_range(uintptr_t gpa,
+        uintptr_t foreign_gpa, bfvmm::intel_x64::ept::mmap &foreign_mmap,
+        uint32_t size,
+        bfvmm::intel_x64::ept::mmap::attr_type attr,
+        bfvmm::intel_x64::ept::mmap::memory_type cache);
+
+    void unshare_range(uintptr_t gpa, uint32_t size);
+
 public:
 
     /// Set UART

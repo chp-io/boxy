@@ -55,6 +55,10 @@ public:
 private:
 
     void gva_to_gpa(vcpu *vcpu);
+
+    std::tuple<domain*,uint64_t,domain*,uint64_t,uint32_t,
+        bfvmm::intel_x64::ept::mmap::attr_type,
+        bfvmm::intel_x64::ept::mmap::memory_type> map_range_init(vcpu *vp);
     void map_range(vcpu *vcpu);
     void unmap_range(vcpu *vcpu);
 
@@ -63,18 +67,6 @@ private:
 private:
 
     vcpu *m_vcpu;
-
-    using remap_key = std::pair<domain::domainid_type,uint64_t>;
-    struct remap_hash
-    {
-        template <class T1, class T2>
-        std::size_t operator() (const std::pair<T1, T2> &pair) const
-        {
-            return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
-        }
-    };
-
-    std::unordered_map<remap_key,uint64_t,remap_hash> remaps;
 
 public:
 
