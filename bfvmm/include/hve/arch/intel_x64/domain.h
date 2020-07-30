@@ -441,6 +441,9 @@ private:
     mv_mdl_t m_e820_map{};
     bfvmm::intel_x64::vcpu_global_state_t m_vcpu_global_state{};
 
+    std::unordered_map<uintptr_t, uint32_t> m_range_sizes;
+    std::mutex m_mutex;
+
     uart::port_type m_uart_port{};
     uart::port_type m_pt_uart_port{};
     uart m_uart_3F8{0x3F8};
