@@ -66,17 +66,17 @@ vm_state_op_handler::gva_to_gpa(vcpu *vcpu)
     vcpu->set_rax(MV_STATUS_SUCCESS);
 }
 
-inline std::tuple<domain*,uint64_t,domain*,uint64_t,uint32_t,
-    bfvmm::intel_x64::ept::mmap::attr_type,
-    bfvmm::intel_x64::ept::mmap::memory_type>
-vm_state_op_handler::map_range_init(vcpu *vp)
+inline std::tuple<domain *, uint64_t, domain *, uint64_t, uint32_t,
+       bfvmm::intel_x64::ept::mmap::attr_type,
+       bfvmm::intel_x64::ept::mmap::memory_type>
+       vm_state_op_handler::map_range_init(vcpu *vp)
 {
     auto src_vmid{vp->r11()};
     auto src_gpa{vp->r12()};
     auto dst_vmid{vp->r13()};
     auto dst_gpa{vp->r14()};
     auto flags{vp->r15()};
-    auto size{(flags & 0x00000000FFFFFFFF) != 0 ?: 1};
+    auto size{(flags & 0x00000000FFFFFFFF) != 0 ? : 1};
 
     using namespace bfvmm::intel_x64::ept;
 
@@ -137,9 +137,7 @@ vm_state_op_handler::map_range_init(vcpu *vp)
     // Memory access type
 
     switch ((flags >> 32) & 0x3LLU) {
-        case 0:
-            // default
-            break;
+        case 0: break;
         case 1: attr = mmap::attr_type::read_only; break;
         case 2: attr = mmap::attr_type::write_only; break;
         case 3: attr = mmap::attr_type::read_write; break;
@@ -154,10 +152,7 @@ vm_state_op_handler::map_range_init(vcpu *vp)
     // Cacheability
 
     switch ((flags >> 35) & 0x7LLU) {
-        case 0x00:
-            // default
-            break;
-
+        case 0x00: break;
         case 0x01: cache = mmap::memory_type::uncacheable; break;
         // TODO: case 0x02 uncacheable_minus
         case 0x04: cache = mmap::memory_type::write_combining; break;

@@ -121,7 +121,8 @@ domain::release(uintptr_t gpa)
 { m_ept_map.release(gpa); }
 
 void
-domain::share_range(uintptr_t gpa,
+domain::share_range(
+    uintptr_t gpa,
     uintptr_t foreign_gpa, bfvmm::intel_x64::ept::mmap &foreign_mmap,
     uint32_t size,
     bfvmm::intel_x64::ept::mmap::attr_type attr,
@@ -130,8 +131,8 @@ domain::share_range(uintptr_t gpa,
     using namespace ::intel_x64::ept;
 
     for (auto _foreign_gpa = foreign_gpa, _gpa = gpa;
-        _foreign_gpa < (foreign_gpa + (size << pt::from));
-        _foreign_gpa += (0x1ULL << pt::from), _gpa += (0x1ULL << pt::from)) {
+         _foreign_gpa < (foreign_gpa + (size << pt::from));
+         _foreign_gpa += (0x1ULL << pt::from), _gpa += (0x1ULL << pt::from)) {
 
         m_ept_map.share_4k(_gpa, _foreign_gpa, foreign_mmap);
     }
@@ -143,8 +144,8 @@ domain::unshare_range(uintptr_t gpa, uint32_t size)
     using namespace ::intel_x64::ept;
 
     for (auto _gpa = gpa;
-        _gpa < (gpa + (size << pt::from));
-        _gpa += (0x1ULL << pt::from)) {
+         _gpa < (gpa + (size << pt::from));
+         _gpa += (0x1ULL << pt::from)) {
 
         m_ept_map.unshare_4k(_gpa);
     }
