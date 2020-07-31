@@ -141,12 +141,16 @@ domain::share_range(
          _foreign_gpa < (foreign_gpa + (size << pt::from));
          _foreign_gpa += (0x1ULL << pt::from), _gpa += (0x1ULL << pt::from)) {
 
-        m_ept_map.share_4k(_gpa, _foreign_gpa, foreign_mmap);
+        m_ept_map.share_4k(_gpa, _foreign_gpa, foreign_mmap, attr, cache);
     }
 }
 
 void
-domain::unshare_range(uintptr_t gpa, uint32_t size)
+domain::unshare_range(
+    uintptr_t gpa, uint32_t size,
+    bfvmm::intel_x64::ept::mmap::attr_type attr,
+    bfvmm::intel_x64::ept::mmap::memory_type cache)
+
 {
     std::lock_guard lock(m_mutex);
     using namespace ::intel_x64::ept;
@@ -159,7 +163,7 @@ domain::unshare_range(uintptr_t gpa, uint32_t size)
          _gpa < (gpa + (size << pt::from));
          _gpa += (0x1ULL << pt::from)) {
 
-        m_ept_map.unshare_4k(_gpa);
+        m_ept_map.unshare_4k(_gpa, attr, cache);
     }
 
     m_range_sizes.erase(gpa);

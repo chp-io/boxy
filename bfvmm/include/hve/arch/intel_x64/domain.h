@@ -205,6 +205,22 @@ public:
     ///
     void release(uintptr_t gpa);
 
+    /// Share Range
+    ///
+    /// Share a range of 4k guest physical addresses from foreign mmap using EPT
+    /// effectivily remapping our guest physical addresses to their host
+    /// physical addresses.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param gpa the guest physical address to remap
+    /// @param foreign_gpa the foreign guest physical address to remap from
+    /// @param foreign_mmap the foreign mmap to remap from
+    /// @param size the number of GPA to remap
+    /// @param attr the map permissions apply to our GPAs being remapped
+    /// @param cache the memory type for our remapped GPAs
+    ///
     void share_range(
         uintptr_t gpa,
         uintptr_t foreign_gpa, bfvmm::intel_x64::ept::mmap &foreign_mmap,
@@ -212,7 +228,22 @@ public:
         bfvmm::intel_x64::ept::mmap::attr_type attr,
         bfvmm::intel_x64::ept::mmap::memory_type cache);
 
-    void unshare_range(uintptr_t gpa, uint32_t size);
+    /// Unshare Range
+    ///
+    /// Unshare a range of 4k guest physical addresses previously assigned with
+    /// share_range.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param gpa the guest physical address to restore
+    /// @param size the number of GPA to restore
+    /// @param attr the map permissions apply to our GPAs being remapped
+    /// @param cache the memory type for our remapped GPAs
+    void unshare_range(
+        uintptr_t gpa, uint32_t size,
+        bfvmm::intel_x64::ept::mmap::attr_type attr,
+        bfvmm::intel_x64::ept::mmap::memory_type cache);
 
 public:
 

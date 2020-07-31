@@ -199,7 +199,7 @@ vm_state_op_handler::unmap_range(vcpu *vp)
     }
 
     try {
-        dst_vm->unshare_range(dst_gpa, size);
+        dst_vm->unshare_range(dst_gpa, size, attr, cache);
     }
     catchall({
         throw std::runtime_error("map_range failed");
