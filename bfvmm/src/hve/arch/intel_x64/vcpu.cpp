@@ -244,6 +244,22 @@ bool
 vcpu::is_killed() const noexcept
 { return m_killed; }
 
+bool
+vcpu::is_paused() const noexcept
+{ return m_pause_counter != 0; }
+
+void
+vcpu::pause() noexcept
+{ ++m_pause_counter; }
+
+void
+vcpu::resume()
+{
+    if (--m_pause_counter < 0) {
+        throw std::runtime_error("vcpu: resume failed, already running");
+    }
+}
+
 //------------------------------------------------------------------------------
 // Virtual IRQs
 //------------------------------------------------------------------------------

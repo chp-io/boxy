@@ -46,11 +46,16 @@ bool
 external_interrupt_handler::handle(
     vcpu_t *vcpu, bfvmm::intel_x64::external_interrupt_handler::info_t &info)
 {
-    bfignored(vcpu);
     auto parent_vcpu = m_vcpu->parent_vcpu();
 
     parent_vcpu->load();
     parent_vcpu->queue_external_interrupt(info.vector);
+
+    if (parent_vcpu->is_paused()) {
+        vcpu->load();
+        return true;
+    }
+
     parent_vcpu->return_continue();
 
     // Unreachable

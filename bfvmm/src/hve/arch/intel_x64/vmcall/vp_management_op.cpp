@@ -31,11 +31,51 @@ vp_management_op_handler::vp_management_op_handler(
 ) :
     m_vcpu{vcpu}
 {
-    if (vcpu->is_domU()) {
-        return;
-    }
-
     vcpu->add_vmcall_handler({&vp_management_op_handler::dispatch, this});
+}
+
+void
+vp_management_op_handler::pause_vp(vcpu *vp)
+{
+    vcpu *_vp;
+
+    try {
+        if (vp->r11() == MV_VPID_PARENT) {
+            _vp = vp->parent_vcpu();
+        }
+        else {
+            _vp = g_vcm->get<vcpu *>(vp->r11());
+        }
+        _vp->pause();
+    } catchall({
+        bferror_info(0, "pause vm failed");
+        vp->set_rax(MV_STATUS_FAILURE_UNKNOWN);
+        return;
+    })
+
+    vp->set_rax(MV_STATUS_SUCCESS);
+}
+
+void
+vp_management_op_handler::resume_vp(vcpu *vp)
+{
+    vcpu *_vp;
+
+    try {
+        if (vp->r11() == MV_VPID_PARENT) {
+            _vp = vp->parent_vcpu();
+        }
+        else {
+            _vp = g_vcm->get<vcpu *>(vp->r11());
+        }
+        _vp->resume();
+    } catchall({
+        bferror_info(0, "resume vm failed");
+        vp->set_rax(MV_STATUS_FAILURE_UNKNOWN);
+        return;
+    })
+
+    vp->set_rax(MV_STATUS_SUCCESS);
 }
 
 bool
@@ -48,6 +88,12 @@ vp_management_op_handler::dispatch(vcpu *vcpu)
     // TODO: Validate the handle
 
     switch (mv_hypercall_index(vcpu->rax())) {
+        case MV_VP_MANAGEMENT_OP_PAUSE_VP_IDX_VAL:
+            this->pause_vp(vcpu);
+            return true;
+        case MV_VP_MANAGEMENT_OP_RESUME_VP_IDX_VAL:
+            this->resume_vp(vcpu);
+            return true;
         default:
             break;
     };

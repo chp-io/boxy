@@ -53,6 +53,8 @@ public:
     ~vp_management_op_handler() = default;
 
 private:
+    void pause_vp(vcpu *vcpu);
+    void resume_vp(vcpu *vcpu);
 
     bool dispatch(vcpu *vcpu);
 

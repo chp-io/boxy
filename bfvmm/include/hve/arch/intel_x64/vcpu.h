@@ -287,6 +287,33 @@ public:
     ///
     VIRTUAL bool is_killed() const noexcept;
 
+    /// Is Paused
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return returns true if the vCPU is currently paused, false otherwise
+    ///
+    VIRTUAL bool is_paused() const noexcept;
+
+    /// Pause
+    ///
+    /// Pause the vCPU by incrementing the pause counter.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    VIRTUAL void pause() noexcept;
+
+    /// Resume
+    ///
+    /// Resume the vCPU. Throws if the vCPU is already running.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    VIRTUAL void resume();
+
     //--------------------------------------------------------------------------
     // Virtual IRQs
     //--------------------------------------------------------------------------
@@ -424,6 +451,7 @@ private:
 
     bool m_killed{};
     vcpu *m_parent_vcpu{};
+    int64_t m_pause_counter{};
 
 private:
 
