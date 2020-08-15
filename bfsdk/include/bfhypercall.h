@@ -23,10 +23,12 @@
 #ifndef BFHYPERCALL_H
 #define BFHYPERCALL_H
 
+#ifndef MV_EXCLUDE_DEPRECATED
 #include <bftypes.h>
 #include <bfmemory.h>
 #include <bfconstants.h>
 #include <bferrorcodes.h>
+#endif // MV_EXCLUDE_DEPRECATED
 
 #pragma pack(push, 1)
 
@@ -1682,6 +1684,8 @@ mv_vp_management_op_resume_vp(
 // !!! WARNING DEPRECATED !!!
 // =============================================================================
 
+#ifndef MV_EXCLUDE_DEPRECATED
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -2395,6 +2399,8 @@ hypercall_vclock_op__get_guest_wallclock(
     return _vmcall4(
                &op, sec, nsec, tsc);
 }
+
+#endif // MV_EXCLUDE_DEPRECATED
 
 #ifdef __cplusplus
 }
