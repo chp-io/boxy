@@ -203,23 +203,29 @@ vp_state_op_handler::init_target(vcpu *vp)
     switch (vp->r11()) {
         case MV_VPID_SELF:
             vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_SELF);
+            bfdebug_info(0, "vp_state_op: self not supported");
             break;
         case MV_VPID_PARENT:
             if (vp->is_dom0()) {
                 vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_PARENT);
+                bfdebug_info(0,
+                             "vp_state_op: parent requested but this is root vp");
                 break;
             }
             target = vp->parent_vcpu();
             break;
         case MV_VPID_ANY:
             vp->set_rax(MV_STATUS_INVALID_VPID_UNSUPPORTED_ANY);
+            bfdebug_info(0, "vp_state_op: any not supported");
             break;
         default:
             if (vp->is_dom0()) {
-                // TODO check if is child of current vp
+                // TODO: check if target vp is our child
+                bfdebug_info(10,
+                    "vp_state_op: Warning no check if target vp is our child");
             }
             else if (vp->parent_vcpu()->id() != vp->r11()) {
-                vp->set_rax(MV_STATUS_FAILURE_UNSUPPORTED_HYPERCALL);
+                vp->set_rax(MV_STATUS_INVALID_PARAMS1);
                 break;
             }
 
@@ -227,7 +233,8 @@ vp_state_op_handler::init_target(vcpu *vp)
                 target = get_vcpu(vp->r11());
             }
             catchall({
-                vp->set_rax(MV_STATUS_INVALID_VPID_UNKNOWN);
+                vp->set_rax(MV_STATUS_INVALID_PARAMS1);
+                bfdebug_nhex(0, "vcpuid not found", vp->r11());
                 break;
             })
     }
