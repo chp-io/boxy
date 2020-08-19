@@ -85,10 +85,12 @@ vcpu::vcpu(
     bfvmm::intel_x64::vcpu{id, domain->global_state()},
     m_domain{domain},
 
+    m_control_register_handler{this},
     m_exception_handler{this},
     m_external_interrupt_handler{this},
     m_hlt_handler{this},
     m_io_instruction_handler{this},
+    m_monitor_trap_handler{this},
     m_msr_handler{this},
     m_nmi_window_handler{this},
     m_preemption_timer_handler{this},
@@ -159,6 +161,10 @@ vcpu::domid() const noexcept
 void
 vcpu::add_vmcall_handler(const handler_delegate_t &d)
 { m_vmcall_handler.add_handler(std::move(d)); }
+
+void
+vcpu::add_vmcall_no_advance_handler(const handler_delegate_t &d)
+{ m_vmcall_handler.add_no_advance_handler(std::move(d)); }
 
 //------------------------------------------------------------------------------
 // Hlt
@@ -259,6 +265,34 @@ vcpu::resume()
         throw std::runtime_error("vcpu: resume failed, already running");
     }
 }
+
+//------------------------------------------------------------------------------
+// VM Exit Events
+//------------------------------------------------------------------------------
+
+bool
+vcpu::add_listener_for_exit(uint64_t reason, uint64_t vpid)
+{ return m_vp_exit_op_handler.add_listener_for_exit(reason, vpid); }
+
+bool
+vcpu::remove_listener_for_exit(uint64_t reason, uint64_t vpid)
+{ return m_vp_exit_op_handler.remove_listener_for_exit(reason, vpid); }
+
+bool
+vcpu::notify_next(const event_t &event)
+{ return m_vp_exit_op_handler.notify_next(event); }
+
+bool
+vcpu::notify_exit(const event_t &event)
+{ return m_vp_exit_op_handler.notify_exit(event); }
+
+void
+vcpu::listener_handled_exit(bool advance)
+{ return m_vp_exit_op_handler.listener_handled_exit(advance); }
+
+void
+vcpu::inject_exit_and_run(const event_t &event)
+{ m_vp_exit_op_handler.inject_exit_and_run(event); }
 
 //------------------------------------------------------------------------------
 // Virtual IRQs

@@ -23,6 +23,7 @@
 #define VMCALL_VP_EXIT_OP_INTEL_X64_BOXY_H
 
 #include <bfvmm/hve/arch/intel_x64/vcpu.h>
+#include <unordered_set>
 
 // -----------------------------------------------------------------------------
 // Definitions
@@ -52,13 +53,125 @@ public:
     ///
     ~vp_exit_op_handler() = default;
 
+public:
+
+    // Should map mv_vp_exit_op_next_event hypercall arguments
+    struct event_t {
+        uint64_t vpid;
+        uint64_t reason;
+        uint64_t data0;
+        uint64_t data1;
+    };
+
+public:
+
+    /// Add Listener For Exit
+    ///
+    /// Add a vpid listener for an exit reason
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param reason the mv_vp_exit_t exit reason.
+    /// @param vpid the vpid of the vcpu listening for the exit.
+    ///
+    /// @return returns true if there is no existing vpid listener for this
+    /// reason and the listener was successfully added, false otherwise.
+    ///
+    bool add_listener_for_exit(uint64_t reason, uint64_t vpid);
+
+    /// Remove Listener For Exit
+    ///
+    /// Remove a vpid listener for an exit reason
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param reason the mv_vp_exit_t exit reason.
+    /// @param vpid the vpid of the vcpu listening for the exit.
+    ///
+    /// @return returns true if an existing vpid listener for this reason was
+    /// removed, false otherwise.
+    ///
+    bool remove_listener_for_exit(uint64_t reason, uint64_t vpid);
+
+    /// Notify Next
+    ///
+    /// Notify the next listener.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return returns true if a listener was notified, false otherwise if none
+    /// are left
+    ///
+    bool notify_next(const event_t &event);
+
+    /// Notify Exit
+    ///
+    /// Notify the first listener.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return returns true if a listener was notified, false otherwise if none
+    /// exist.
+    ///
+    bool notify_exit(const event_t &event);
+
+    /// Listener Handled Exit
+    ///
+    /// Listener has handled the exit. This function doesn't return as it
+    /// world switches and resumes execution.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param advance the vcpu should advance before resuming.
+    ///
+    void listener_handled_exit(bool advance);
+
+    /// Inject Exit And Run
+    ///
+    /// Inject an exit event and run.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param event the VM Exit event.
+    ///
+    void inject_exit_and_run(const event_t &event);
+
 private:
 
-    bool dispatch(vcpu *vcpu);
+    void next_exit_kernel(vcpu *vcpu);
+    void next_exit(vcpu *vcpu);
+    void end_of_exit(vcpu *vcpu);
+    template <typename T>
+    void handle_pending_if_exists(vcpu *vp, const T &ctrl);
+    template <typename T>
+    bool control_exiting(
+        vcpu *vp, vcpu *target, uint64_t allowance_mask, T vm_ctrl);
+    void vmread(vcpu *vp, vcpu *target);
+    void vmwrite(vcpu *vp, vcpu *target);
+
+    bool wrcr3_handler(vcpu_t *vcpu);
+
+    bool dispatch_no_advance_domU(vcpu *vcpu);
+    bool dispatch_domU(vcpu *vcpu);
+    bool dispatch_dom0(vcpu *vcpu);
 
 private:
 
     vcpu *m_vcpu;
+
+    std::queue<event_t> m_exit_event_pending;
+    uint8_t m_cpl{};
+    uint64_t m_next_timeout{0xFFFFFFFFFFFFFFFFULL};
+
+    std::array<std::pair<std::unordered_set<uint64_t>::iterator,
+        std::unordered_set<uint64_t> /*vpids*/>, mv_vp_exit_t_max>
+        m_notify_vpids_for_reasons{};
 
 public:
 
@@ -71,6 +184,7 @@ public:
     vp_exit_op_handler &operator=(const vp_exit_op_handler &) = delete;
 
     /// @endcond
+
 };
 
 }

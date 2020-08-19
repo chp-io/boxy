@@ -221,8 +221,8 @@ vp_state_op_handler::init_target(vcpu *vp)
         default:
             if (vp->is_dom0()) {
                 // TODO: check if target vp is our child
-                bfdebug_info(10,
-                    "vp_state_op: Warning no check if target vp is our child");
+                bfdebug_info(0,
+                             "vp_state_op: no check if target vp is our child (FIXME)");
             }
             else if (vp->parent_vcpu()->id() != vp->r11()) {
                 vp->set_rax(MV_STATUS_INVALID_PARAMS1);

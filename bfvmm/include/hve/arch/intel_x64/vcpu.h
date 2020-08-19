@@ -28,10 +28,12 @@
 
 #include "domain.h"
 
+#include "vmexit/control_register.h"
 #include "vmexit/exception.h"
 #include "vmexit/external_interrupt.h"
 #include "vmexit/hlt.h"
 #include "vmexit/io_instruction.h"
+#include "vmexit/monitor_trap.h"
 #include "vmexit/msr.h"
 #include "vmexit/nmi_window.h"
 #include "vmexit/preemption_timer.h"
@@ -136,6 +138,27 @@ public:
     /// @param d the delegate to call when a vmcall exit occurs
     ///
     VIRTUAL void add_vmcall_handler(const handler_delegate_t &d);
+
+    /// Add VMCall Handler No Advance
+    ///
+    /// Add a VMCall handler without advancing the instruction pointer.
+    /// The handler is responsible for advancing.
+    ///
+    /// Notes:
+    ///
+    /// This no-advance vmcall handler is garanteed to be called before any
+    /// other vmcall handlers and allows us to optionally advance the cpu. This
+    /// gives us the following capabilities:
+    ///
+    /// - Allows the interruption of hypercalls taking a long time to process
+    /// - Other events (e.g. timers) can be injected while we're still waiting
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param d the delegate to call when a vmcall exit occurs
+    ///
+    VIRTUAL void add_vmcall_no_advance_handler(const handler_delegate_t &d);
 
     //--------------------------------------------------------------------------
     // Hlt
@@ -315,6 +338,89 @@ public:
     VIRTUAL void resume();
 
     //--------------------------------------------------------------------------
+    // Exit Events
+    //--------------------------------------------------------------------------
+
+    using event_t = vp_exit_op_handler::event_t;
+
+    /// Add Listener For Exit
+    ///
+    /// Add a vpid listener for an exit reason
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param reason the mv_vp_exit_t exit reason.
+    /// @param vpid the vpid of the vcpu listening for the exit.
+    ///
+    /// @return returns true if there is no existing vpid listener for this
+    /// reason and the listener was successfully added, false otherwise.
+    ///
+    VIRTUAL bool add_listener_for_exit(uint64_t reason, uint64_t vpid);
+
+    /// Remove Listener For Exit
+    ///
+    /// Removes a vpid listener for an exit reason
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param reason the mv_vp_exit_t exit reason.
+    /// @param vpid the vpid of the vcpu listening for the exit.
+    ///
+    /// @return returns true if an existing vpid listener for this reason was
+    /// removed, false otherwise.
+    ///
+    VIRTUAL bool remove_listener_for_exit(uint64_t reason, uint64_t vpid);
+
+    /// Notify Next
+    ///
+    /// Notify the next listener.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return returns true if a listener was notified, false otherwise if none
+    /// are left
+    ///
+    VIRTUAL bool notify_next(const event_t &event);
+
+    /// Notify Exit
+    ///
+    /// Notify the first listener.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @return returns true if a listener was notified, false otherwise if none
+    /// exist.
+    ///
+    VIRTUAL bool notify_exit(const event_t &event);
+
+    /// Listener Handled Exit
+    ///
+    /// Listener has handled the exit. This function doesn't return as it
+    /// world switches and resumes execution.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param advance the vcpu should advance before resuming.
+    ///
+    VIRTUAL void listener_handled_exit(bool advance);
+
+    /// Inject Exit And Run
+    ///
+    /// Inject an exit event and run.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param event the VM Exit event.
+    ///
+    VIRTUAL void inject_exit_and_run(const event_t &event);
+
+    //--------------------------------------------------------------------------
     // Virtual IRQs
     //--------------------------------------------------------------------------
 
@@ -455,10 +561,12 @@ private:
 
 private:
 
+    control_register_handler m_control_register_handler;
     exception_handler m_exception_handler;
     external_interrupt_handler m_external_interrupt_handler;
     hlt_handler m_hlt_handler;
     io_instruction_handler m_io_instruction_handler;
+    monitor_trap_handler m_monitor_trap_handler;
     msr_handler m_msr_handler;
     nmi_window_handler m_nmi_window_handler;
     preemption_timer_handler m_preemption_timer_handler;

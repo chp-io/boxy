@@ -47,6 +47,11 @@ vmcall_handler::add_handler(
     const handler_delegate_t &d)
 { m_handlers.push_back(d); }
 
+void
+vmcall_handler::add_no_advance_handler(
+    const handler_delegate_t &d)
+{ m_handlers_no_advance.push_back(d); }
+
 // -----------------------------------------------------------------------------
 // Handlers
 // -----------------------------------------------------------------------------
@@ -80,6 +85,17 @@ vmcall_handler::handle(vcpu_t *vcpu)
     auto ___ = gsl::finally([&] {
         vcpu->load();
     });
+
+    try {
+        for (const auto &d : m_handlers_no_advance) {
+            if (d(m_vcpu)) {
+                return true;
+            }
+        }
+    }
+    catchall({
+        return vmcall_error(m_vcpu, "vmcall threw exception");
+    })
 
     vcpu->advance();
 

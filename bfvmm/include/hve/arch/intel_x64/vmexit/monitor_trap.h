@@ -19,8 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef VMEXIT_VMCALL_INTEL_X64_BOXY_H
-#define VMEXIT_VMCALL_INTEL_X64_BOXY_H
+#ifndef VMEXIT_MONITOR_TRAP_INTEL_X64_BOXY_H
+#define VMEXIT_MONITOR_TRAP_INTEL_X64_BOXY_H
 
 #include <bfvmm/hve/arch/intel_x64/vcpu.h>
 
@@ -34,7 +34,7 @@ namespace boxy::intel_x64
 class vcpu;
 using handler_delegate_t = delegate<bool(vcpu *)>;
 
-class vmcall_handler
+class monitor_trap_handler
 {
 public:
 
@@ -43,9 +43,9 @@ public:
     /// @expects
     /// @ensures
     ///
-    /// @param vcpu the vcpu object for this interrupt window handler
+    /// @param vcpu the vcpu object for this handler
     ///
-    vmcall_handler(
+    monitor_trap_handler(
         gsl::not_null<vcpu *> vcpu);
 
     /// Destructor
@@ -53,51 +53,25 @@ public:
     /// @expects
     /// @ensures
     ///
-    ~vmcall_handler() = default;
+    ~monitor_trap_handler() = default;
 
-public:
+private:
 
-    /// Add Handler
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @param d the handler to call when an exit occurs
-    ///
-    void add_handler(const handler_delegate_t &d);
-
-    /// Add Handler No Advance
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @param d the handler to call when an exit occurs
-    ///
-    void add_no_advance_handler(const handler_delegate_t &d);
-
-public:
-
-    /// @cond
-
-    bool handle(vcpu_t *vcpu);
-
-    /// @endcond
+    bool handle_monitor_trap(vcpu_t *vcpu);
 
 private:
 
     vcpu *m_vcpu;
-    std::list<handler_delegate_t> m_handlers;
-    std::list<handler_delegate_t> m_handlers_no_advance;
 
 public:
 
     /// @cond
 
-    vmcall_handler(vmcall_handler &&) = default;
-    vmcall_handler &operator=(vmcall_handler &&) = default;
+    monitor_trap_handler(monitor_trap_handler &&) = default;
+    monitor_trap_handler &operator=(monitor_trap_handler &&) = default;
 
-    vmcall_handler(const vmcall_handler &) = delete;
-    vmcall_handler &operator=(const vmcall_handler &) = delete;
+    monitor_trap_handler(const monitor_trap_handler &) = delete;
+    monitor_trap_handler &operator=(const monitor_trap_handler &) = delete;
 
     /// @endcond
 };

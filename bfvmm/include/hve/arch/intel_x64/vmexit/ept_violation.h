@@ -19,8 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef VMEXIT_VMCALL_INTEL_X64_BOXY_H
-#define VMEXIT_VMCALL_INTEL_X64_BOXY_H
+#ifndef VMEXIT_EPT_VIOLATION_INTEL_X64_BOXY_H
+#define VMEXIT_EPT_VIOLATION_INTEL_X64_BOXY_H
 
 #include <bfvmm/hve/arch/intel_x64/vcpu.h>
 
@@ -34,7 +34,7 @@ namespace boxy::intel_x64
 class vcpu;
 using handler_delegate_t = delegate<bool(vcpu *)>;
 
-class vmcall_handler
+class ept_violation_handler
 {
 public:
 
@@ -43,9 +43,9 @@ public:
     /// @expects
     /// @ensures
     ///
-    /// @param vcpu the vcpu object for this interrupt window handler
+    /// @param vcpu the vcpu object for this handler
     ///
-    vmcall_handler(
+    ept_violation_handler(
         gsl::not_null<vcpu *> vcpu);
 
     /// Destructor
@@ -53,51 +53,27 @@ public:
     /// @expects
     /// @ensures
     ///
-    ~vmcall_handler() = default;
+    ~ept_violation_handler() = default;
 
-public:
+private:
 
-    /// Add Handler
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @param d the handler to call when an exit occurs
-    ///
-    void add_handler(const handler_delegate_t &d);
-
-    /// Add Handler No Advance
-    ///
-    /// @expects
-    /// @ensures
-    ///
-    /// @param d the handler to call when an exit occurs
-    ///
-    void add_no_advance_handler(const handler_delegate_t &d);
-
-public:
-
-    /// @cond
-
-    bool handle(vcpu_t *vcpu);
-
-    /// @endcond
+    bool handle_ept_read_violation(vcpu_t *vcpu);
+    bool handle_ept_write_violation(vcpu_t *vcpu);
+    bool handle_ept_execute_violation(vcpu_t *vcpu);
 
 private:
 
     vcpu *m_vcpu;
-    std::list<handler_delegate_t> m_handlers;
-    std::list<handler_delegate_t> m_handlers_no_advance;
 
 public:
 
     /// @cond
 
-    vmcall_handler(vmcall_handler &&) = default;
-    vmcall_handler &operator=(vmcall_handler &&) = default;
+    ept_violation_handler(ept_violation_handler &&) = default;
+    ept_violation_handler &operator=(ept_violation_handler &&) = default;
 
-    vmcall_handler(const vmcall_handler &) = delete;
-    vmcall_handler &operator=(const vmcall_handler &) = delete;
+    ept_violation_handler(const ept_violation_handler &) = delete;
+    ept_violation_handler &operator=(const ept_violation_handler &) = delete;
 
     /// @endcond
 };
