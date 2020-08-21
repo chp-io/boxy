@@ -6,7 +6,10 @@
 
 VMILINUX_SITE = ${BR2_EXTERNAL_vmilinux_PATH}/../.. # ${BOXY_SOURCE_ROOT_DIR}
 VMILINUX_SITE_METHOD = local
-VMILINUX_OVERRIDE_SRCDIR_RSYNC_EXCLUSIONS = --exclude build --exclude 'build_*'
+VMILINUX_OVERRIDE_SRCDIR_RSYNC_EXCLUSIONS = \
+	--exclude build \
+	--exclude 'build_*' \
+	--exclude cache  # Prevents rsync protocol error caused by vbox fs driver
 
 VMILINUX_LICENSE = MIT
 
