@@ -38,6 +38,14 @@ vm_management_op_handler::vm_management_op_handler(
     vcpu->add_vmcall_handler({&vm_management_op_handler::dispatch, this});
 }
 
+void
+vm_management_op_handler::pause_vm(vcpu *vcpu)
+{ }
+
+void
+vm_management_op_handler::resume_vm(vcpu *vcpu)
+{ }
+
 bool
 vm_management_op_handler::dispatch(vcpu *vcpu)
 {
@@ -48,6 +56,12 @@ vm_management_op_handler::dispatch(vcpu *vcpu)
     // TODO: Validate the handle
 
     switch (mv_hypercall_index(vcpu->rax())) {
+        case MV_VM_MANAGEMENT_OP_PAUSE_VM_IDX_VAL:
+            this->pause_vm(vcpu);
+            return true;
+        case MV_VM_MANAGEMENT_OP_RESUME_VM_IDX_VAL:
+            this->resume_vm(vcpu);
+            return true;
         default:
             break;
     };

@@ -54,6 +54,9 @@ public:
 
 private:
 
+    void pause_vm(vcpu *vcpu);
+    void resume_vm(vcpu *vcpu);
+
     bool dispatch(vcpu *vcpu);
 
 private:

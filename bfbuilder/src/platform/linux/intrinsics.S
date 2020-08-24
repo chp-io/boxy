@@ -192,6 +192,40 @@ _mv_vm_state_op_unmap_range:
         .size _mv_vm_state_op_unmap_range, .-_mv_vm_state_op_unmap_range
 
 /* -------------------------------------------------------------------------- */
+/* _mv_vm_management_op_pause_vm                                              */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vm_management_op_pause_vm
+        .type   _mv_vm_management_op_pause_vm, @function
+_mv_vm_management_op_pause_vm:
+
+        mov r10, rdi
+        mov r11, rsi
+
+        mov rax, 0x764D000000040002
+        vmcall
+
+        ret
+        .size _mv_vm_management_op_pause_vm, .-_mv_vm_management_op_pause_vm
+
+/* -------------------------------------------------------------------------- */
+/* _mv_vm_management_op_resume_vm                                             */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vm_management_op_resume_vm
+        .type   _mv_vm_management_op_resume_vm, @function
+_mv_vm_management_op_resume_vm:
+
+        mov r10, rdi
+        mov r11, rsi
+
+        mov rax, 0x764D000000040003
+        vmcall
+
+        ret
+        .size _mv_vm_management_op_resume_vm, .-_mv_vm_management_op_resume_vm
+
+/* -------------------------------------------------------------------------- */
 /* _mv_vp_state_op_reg_val                                                    */
 /* -------------------------------------------------------------------------- */
 
