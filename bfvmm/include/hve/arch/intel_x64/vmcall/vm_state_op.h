@@ -61,6 +61,8 @@ private:
         bfvmm::intel_x64::ept::mmap::memory_type> map_range_init(vcpu *vp);
     void map_range(vcpu *vcpu);
     void unmap_range(vcpu *vcpu);
+    void gpa_flags(vcpu *vcpu);
+    void set_gpa_flags(vcpu *vcpu);
 
     bool dispatch(vcpu *vcpu);
 

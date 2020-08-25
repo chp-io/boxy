@@ -192,6 +192,53 @@ _mv_vm_state_op_unmap_range:
         .size _mv_vm_state_op_unmap_range, .-_mv_vm_state_op_unmap_range
 
 /* -------------------------------------------------------------------------- */
+/* _mv_vm_state_op_gpa_flags                                                  */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vm_state_op_gpa_flags
+        .type   _mv_vm_state_op_gpa_flags, @function
+_mv_vm_state_op_gpa_flags:
+
+        push r12
+
+        mov r10, rdi
+        mov r11, rsi
+        mov r12, rdx
+
+        mov rax, 0x764D00000003000F
+        vmcall
+
+        mov [rcx], r10
+
+        pop r12
+        ret
+        .size _mv_vm_state_op_gpa_flags, .-_mv_vm_state_op_gpa_flags
+
+/* -------------------------------------------------------------------------- */
+/* _mv_vm_state_op_set_gpa_flags                                              */
+/* -------------------------------------------------------------------------- */
+
+        .globl  _mv_vm_state_op_set_gpa_flags
+        .type   _mv_vm_state_op_set_gpa_flags, @function
+_mv_vm_state_op_set_gpa_flags:
+
+        push r12
+        push r13
+
+        mov r10, rdi
+        mov r11, rsi
+        mov r12, rdx
+        mov r13, rcx
+
+        mov rax, 0x764D000000030010
+        vmcall
+
+        pop r13
+        pop r12
+        ret
+        .size _mv_vm_state_op_set_gpa_flags, .-_mv_vm_state_op_set_gpa_flags
+
+/* -------------------------------------------------------------------------- */
 /* _mv_vm_management_op_pause_vm                                              */
 /* -------------------------------------------------------------------------- */
 

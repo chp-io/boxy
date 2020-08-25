@@ -208,6 +208,179 @@ vm_state_op_handler::unmap_range(vcpu *vp)
     vp->set_rax(MV_STATUS_SUCCESS);
 }
 
+void
+vm_state_op_handler::gpa_flags(vcpu *vp)
+{
+    auto vmid{vp->r11()};
+    auto gpa{vp->r12()};
+
+    domain *vm{};
+    uint64_t gpa_flags{};
+
+    switch (vmid) {
+        case MV_VMID_ROOT:
+            try {
+                vm = get_domain(vp->domid());
+            }
+            catchall({
+                vp->set_rax(MV_STATUS_INVALID_PARAMS1);
+                return;
+            });
+            break;
+        default:
+            bfdebug_info(0, "map_range: non-root vmid is not yet implemented");
+            vp->set_rax(MV_STATUS_INVALID_PARAMS1);
+            return;
+    }
+
+    try {
+        auto [attr, cache, from] = vm->gpa_properties(gpa);
+
+        using namespace bfvmm::intel_x64::ept;
+
+        switch (attr) {
+            case mmap::attr_type::none:
+                break;
+            case mmap::attr_type::read_only:
+                gpa_flags |= MV_GPA_FLAG_READ_ACCESS;
+                break;
+            case mmap::attr_type::write_only:
+                gpa_flags |= MV_GPA_FLAG_WRITE_ACCESS;
+                break;
+            case mmap::attr_type::execute_only:
+                gpa_flags |= MV_GPA_FLAG_EXECUTE_ACCESS;
+                break;
+            case mmap::attr_type::read_write:
+                gpa_flags |= MV_GPA_FLAG_READ_ACCESS;
+                gpa_flags |= MV_GPA_FLAG_WRITE_ACCESS;
+                break;
+            case mmap::attr_type::read_execute:
+                gpa_flags |= MV_GPA_FLAG_READ_ACCESS;
+                gpa_flags |= MV_GPA_FLAG_EXECUTE_ACCESS;
+                break;
+            case mmap::attr_type::read_write_execute:
+                gpa_flags |= MV_GPA_FLAG_READ_ACCESS;
+                gpa_flags |= MV_GPA_FLAG_WRITE_ACCESS;
+                gpa_flags |= MV_GPA_FLAG_EXECUTE_ACCESS;
+                break;
+        }
+
+        switch (cache) {
+            case mmap::memory_type::uncacheable:
+                gpa_flags |= MV_GPA_FLAG_UNCACHEABLE;
+                break;
+            case mmap::memory_type::write_combining:
+                gpa_flags |= MV_GPA_FLAG_WRITE_COMBINING;
+                break;
+            case mmap::memory_type::write_through:
+                gpa_flags |= MV_GPA_FLAG_WRITE_THROUGH;
+                break;
+            case mmap::memory_type::write_protected:
+                gpa_flags |= MV_GPA_FLAG_WRITE_PROTECTED;
+                break;
+            case mmap::memory_type::write_back:
+                gpa_flags |= MV_GPA_FLAG_WRITE_BACK;
+                break;
+        }
+
+        switch (from) {
+            case ::intel_x64::ept::pt::from:
+                gpa_flags |= MV_GPA_FLAG_PAGE_SIZE_4k;
+                break;
+            case ::intel_x64::ept::pd::from:
+                gpa_flags |= MV_GPA_FLAG_PAGE_SIZE_2M;
+                break;
+            case ::intel_x64::ept::pdpt::from:
+                gpa_flags |= MV_GPA_FLAG_PAGE_SIZE_1G;
+                break;
+            default:
+                throw std::runtime_error("gpa_flags: wrong from");
+        }
+    }
+    catchall({
+        bfdebug_info(0, "gpa_flags: failed");
+        vp->set_rax(MV_STATUS_FAILURE_UNKNOWN);
+        return;
+    });
+
+    vp->set_r10(gpa_flags);
+    vp->set_rax(MV_STATUS_SUCCESS);
+}
+
+void
+vm_state_op_handler::set_gpa_flags(vcpu *vp)
+{
+    auto vmid{vp->r11()};
+    auto gpa{vp->r12()};
+    auto gpa_flags{vp->r13()};
+
+    domain *vm{nullptr};
+
+    switch (vmid) {
+        case MV_VMID_ROOT:
+            try {
+                vm = get_domain(vp->domid());
+            }
+            catchall({
+                vp->set_rax(MV_STATUS_INVALID_PARAMS1);
+                return;
+            });
+            break;
+        default:
+            bfdebug_info(0, "map_range: non-root vmid is not yet implemented");
+            vp->set_rax(MV_STATUS_INVALID_PARAMS1);
+            return;
+    }
+
+    using namespace bfvmm::intel_x64::ept;
+
+    mmap::attr_type attr;
+    uint64_t rwx = (gpa_flags >> 32) & 0x7ULL;
+    switch (rwx) {
+        case 0: attr = mmap::attr_type::none; break;
+        case 1: attr = mmap::attr_type::read_only; break;
+        case 2: attr = mmap::attr_type::write_only; break;
+        case 3: attr = mmap::attr_type::read_write; break;
+        case 4: attr = mmap::attr_type::execute_only; break;
+        case 5: attr = mmap::attr_type::read_execute; break;
+        case 6:
+            bfdebug_info(0,
+                         "set_gpa_flags: write-execute is not a valid permission");
+            vp->set_rax(MV_STATUS_INVALID_PARAMS3);
+            return;
+        case 7: attr = mmap::attr_type::read_write_execute; break;
+    }
+
+    mmap::memory_type cache;
+    uint64_t cache_flags = (gpa_flags >> 35) & 0x7FULL;
+    switch (cache_flags) {
+        case 0x1: cache = mmap::memory_type::uncacheable; break;
+        case 0x4: cache = mmap::memory_type::write_combining; break;
+        case 0x10: cache = mmap::memory_type::write_through; break;
+        case 0x20: cache = mmap::memory_type::write_back; break;
+        case 0x40: cache = mmap::memory_type::write_protected; break;
+        default:
+            bfdebug_info(0, "set_gpa_flags: unsupported cacheability");
+            vp->set_rax(MV_STATUS_INVALID_PARAMS3);
+            return;
+    }
+
+    uint64_t from;
+    uint64_t from_flags = (gpa_flags >> 42) & 0x7ULL;
+    switch (from_flags) {
+        case 0x1: from = ::intel_x64::ept::pt::from; break;
+        case 0x2: from = ::intel_x64::ept::pd::from; break;
+        case 0x4: from = ::intel_x64::ept::pdpt::from; break;
+        default:
+            bfdebug_info(0, "set_gpa_flags: invalid from flags");
+            vp->set_rax(MV_STATUS_INVALID_PARAMS3);
+            return;
+    }
+
+    vm->set_gpa_properties(gpa, attr, cache, from);
+    vp->set_rax(MV_STATUS_SUCCESS);
+}
+
 bool
 vm_state_op_handler::dispatch(vcpu *vcpu)
 {
@@ -226,6 +399,12 @@ vm_state_op_handler::dispatch(vcpu *vcpu)
             return true;
         case MV_VM_STATE_OP_UNMAP_RANGE_IDX_VAL:
             this->unmap_range(vcpu);
+            return true;
+        case MV_VM_STATE_OP_GPA_FLAGS_IDX_VAL:
+            this->gpa_flags(vcpu);
+            return true;
+        case MV_VM_STATE_OP_SET_GPA_FLAGS_IDX_VAL:
+            this->set_gpa_flags(vcpu);
             return true;
         default:
             break;

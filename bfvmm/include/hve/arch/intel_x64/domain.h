@@ -245,6 +245,20 @@ public:
         bfvmm::intel_x64::ept::mmap::attr_type attr,
         bfvmm::intel_x64::ept::mmap::memory_type cache);
 
+    /// GPA flags
+    ///
+    std::tuple <
+    bfvmm::intel_x64::ept::mmap::attr_type,
+          bfvmm::intel_x64::ept::mmap::memory_type,
+          uint64_t /*from*/
+          > gpa_properties(uintptr_t gpa);
+
+    void set_gpa_properties(
+        uintptr_t gpa,
+        bfvmm::intel_x64::ept::mmap::attr_type attr,
+        bfvmm::intel_x64::ept::mmap::memory_type cache,
+        uint64_t from);
+
 public:
 
     /// Set UART

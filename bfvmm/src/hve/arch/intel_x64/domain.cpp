@@ -169,6 +169,37 @@ domain::unshare_range(
     m_range_sizes.erase(gpa);
 }
 
+std::tuple <
+bfvmm::intel_x64::ept::mmap::attr_type,
+      bfvmm::intel_x64::ept::mmap::memory_type,
+      uint64_t /*from*/
+      >
+      domain::gpa_properties(uintptr_t gpa)
+{
+    return {
+        m_ept_map.attribute(gpa),
+        m_ept_map.cacheability(gpa),
+        m_ept_map.from(gpa),
+    };
+}
+
+void
+domain::set_gpa_properties(
+    uintptr_t gpa,
+    bfvmm::intel_x64::ept::mmap::attr_type attr,
+    bfvmm::intel_x64::ept::mmap::memory_type cache,
+    uint64_t from)
+{
+    m_ept_map.set_attribute(gpa, attr);
+    m_ept_map.set_cacheability(gpa, cache);
+
+    if (from != m_ept_map.from(gpa)) {
+        // TODO make 4k 2m or 1g
+        throw std::runtime_error(
+            "set_gpa_properties: from is not yet implemented");
+    }
+}
+
 void
 domain::set_uart(uart::port_type uart) noexcept
 { m_uart_port = uart; }
