@@ -37,4 +37,16 @@ else
 	LIBVMI_CONF_OPTS += -DCMAKE_BUILD_TYPE=Release
 endif
 
+ifeq ($(BR2_LIBVMI_INCLUDE_EXAMPLES),y)
+define LIBVMI_INSTALL_EXAMPLES
+	$(INSTALL) -m 0755 -D $(@D)/examples/cr3-event-example \
+		$(TARGET_DIR)/usr/bin/
+	$(INSTALL) -m 0755 -D $(@D)/examples/mem-event-example \
+		$(TARGET_DIR)/usr/bin/
+	$(INSTALL) -m 0755 -D $(@D)/examples/singlestep-event-example \
+		$(TARGET_DIR)/usr/bin/
+endef
+LIBVMI_POST_INSTALL_TARGET_HOOKS += LIBVMI_INSTALL_EXAMPLES
+endif
+
 $(eval $(cmake-package))
