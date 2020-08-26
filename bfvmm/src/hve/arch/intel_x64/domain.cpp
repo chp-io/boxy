@@ -206,7 +206,11 @@ domain::set_uart(uart::port_type uart) noexcept
 
 void
 domain::set_pt_uart(uart::port_type uart) noexcept
-{ m_pt_uart_port = uart; }
+{ m_pt_uart_ports = {uart}; }
+
+void
+domain::add_pt_uart(uart::port_type uart) noexcept
+{ m_pt_uart_ports[m_pt_uarts_last_added++] = uart; }
 
 void
 domain::setup_vcpu_uarts(gsl::not_null<vcpu *> vcpu)
@@ -223,7 +227,7 @@ domain::setup_vcpu_uarts(gsl::not_null<vcpu *> vcpu)
     m_uart_3E8.disable(vcpu);
     m_uart_2E8.disable(vcpu);
 
-    if (m_pt_uart_port == 0) {
+    if (m_pt_uarts_last_added == 0) {
         switch (m_uart_port) {
             case 0x3F8: m_uart_3F8.enable(vcpu); break;
             case 0x2F8: m_uart_2F8.enable(vcpu); break;
@@ -235,16 +239,18 @@ domain::setup_vcpu_uarts(gsl::not_null<vcpu *> vcpu)
         };
     }
     else {
-        m_pt_uart = std::make_unique<uart>(m_pt_uart_port);
-        m_pt_uart->pass_through(vcpu);
+        for (uint64_t i = 0; i < m_pt_uarts_last_added; i++) {
+            m_pt_uarts[i] = std::make_unique<uart>(m_pt_uart_ports[i]);
+            m_pt_uarts[i]->pass_through(vcpu);
+        }
     }
 }
 
 uint64_t
 domain::dump_uart(const gsl::span<char> &buffer)
 {
-    if (m_pt_uart) {
-        m_pt_uart->dump(buffer);
+    if (m_pt_uarts_last_added != 0) {
+        m_pt_uarts[0]->dump(buffer);
     }
     else {
         switch (m_uart_port) {

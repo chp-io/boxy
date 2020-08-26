@@ -58,6 +58,8 @@ struct vm_t {
 
     struct mv_handle_t handle;
     struct mv_mdl_t *e820_map;
+
+    uint64_t *pt_uarts;
 };
 
 static struct vm_t g_vms[MAX_VMS] = {0};
@@ -272,15 +274,29 @@ setup_uart(
 }
 
 static status_t
-setup_pt_uart(
-    struct vm_t *vm, uint64_t uart)
+setup_pt_uarts(
+    struct vm_t *vm, struct create_vm_from_bzimage_args *args)
 {
     status_t ret = SUCCESS;
+    vm->pt_uarts = bfalloc_page(uint64_t);
+    uint64_t pt_uarts_size = args->pt_uarts_size * sizeof(uint64_t);
 
-    if (uart != 0) {
-        ret = hypercall_domain_op__set_pt_uart(vm->domainid, uart);
+    if (pt_uarts_size == 0) {
+        return ret;
+    }
+
+    ret = platform_memcpy(vm->pt_uarts, BAREFLANK_PAGE_SIZE, args->pt_uarts,
+        pt_uarts_size, pt_uarts_size);
+    if (ret != SUCCESS) {
+        return ret;
+    }
+
+    BFDEBUG("pt_uarts_size: %llx\n", args->pt_uarts_size);
+    for (int i = 0; i < args->pt_uarts_size; i++) {
+        ret = hypercall_domain_op__add_pt_uart(vm->domainid, vm->pt_uarts[i]);
         if (ret != SUCCESS) {
-            BFERROR("donate_page: hypercall_domain_op__set_pt_uart failed\n");
+            BFERROR(
+                "setup_pt_uarts: hypercall_domain_op__add_pt_uart failed\n");
             return ret;
         }
     }
@@ -707,7 +723,7 @@ common_create_vm_from_bzimage(
         return ret;
     }
 
-    ret = setup_pt_uart(vm, args->pt_uart);
+    ret = setup_pt_uarts(vm, args);
     if (ret != SUCCESS) {
         return ret;
     }
@@ -742,6 +758,7 @@ common_destroy(uint64_t domainid)
     platform_free_rw(vm->cmdline, BAREFLANK_PAGE_SIZE);
     platform_free_rw(vm->gdt, BAREFLANK_PAGE_SIZE);
     platform_free_rw(vm->addr, vm->size);
+    platform_free_rw(vm->pt_uarts, BAREFLANK_PAGE_SIZE);
 
     release_vm(vm);
     return SUCCESS;

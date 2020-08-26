@@ -1917,6 +1917,7 @@ hypercall_uart_ndec_op(uint16_t port, uint64_t val)
 #define hypercall_enum_domain_op__set_uart 0xBF02000000000200
 #define hypercall_enum_domain_op__set_pt_uart 0xBF02000000000201
 #define hypercall_enum_domain_op__dump_uart 0xBF02000000000202
+#define hypercall_enum_domain_op__add_pt_uart 0xBF02000000000203
 
 #define hypercall_enum_domain_op__share_page_r 0xBF02000000000300
 #define hypercall_enum_domain_op__share_page_rw 0xBF02000000000301
@@ -2067,6 +2068,10 @@ hypercall_uart_ndec_op(uint16_t port, uint64_t val)
 #define UART_MAX_BUFFER 0x4000
 #endif
 
+#ifndef PT_UART_MAX_SIZE
+#define PT_UART_MAX_SIZE 16
+#endif
+
 static inline domainid_t
 hypercall_domain_op__create_domain(void)
 {
@@ -2109,6 +2114,19 @@ hypercall_domain_op__set_pt_uart(domainid_t foreign_domainid, uint64_t uart)
 {
     status_t ret = _vmcall(
                        hypercall_enum_domain_op__set_pt_uart,
+                       foreign_domainid,
+                       uart,
+                       0
+                   );
+
+    return ret == 0 ? SUCCESS : FAILURE;
+}
+
+static inline status_t
+hypercall_domain_op__add_pt_uart(domainid_t foreign_domainid, uint64_t uart)
+{
+    status_t ret = _vmcall(
+                       hypercall_enum_domain_op__add_pt_uart,
                        foreign_domainid,
                        uart,
                        0

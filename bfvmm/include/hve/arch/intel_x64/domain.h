@@ -285,6 +285,18 @@ public:
     ///
     void set_pt_uart(uart::port_type uart) noexcept;
 
+    /// Add Pass-Through UART
+    ///
+    /// Add another pass through UART to the VM during each vCPU's
+    /// construction.
+    ///
+    /// @expects
+    /// @ensures
+    ///
+    /// @param uart the port of the serial device to pass through
+    ///
+    void add_pt_uart(uart::port_type uart) noexcept;
+
     /// Setup vCPU UARTs
     ///
     /// Given a vCPU, this function will setup all of the UARTs based
@@ -490,12 +502,13 @@ private:
     std::mutex m_mutex;
 
     uart::port_type m_uart_port{};
-    uart::port_type m_pt_uart_port{};
+    std::array<uart::port_type, PT_UART_MAX_SIZE> m_pt_uart_ports{};
+    uint64_t m_pt_uarts_last_added{};
     uart m_uart_3F8{0x3F8};
     uart m_uart_2F8{0x2F8};
     uart m_uart_3E8{0x3E8};
     uart m_uart_2E8{0x2E8};
-    std::unique_ptr<uart> m_pt_uart{};
+    std::array<std::unique_ptr<uart>, PT_UART_MAX_SIZE> m_pt_uarts{};
 
     uint64_t m_rax{};
     uint64_t m_rbx{};

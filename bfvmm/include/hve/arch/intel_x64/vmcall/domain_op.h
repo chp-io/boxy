@@ -59,6 +59,7 @@ private:
 
     void domain_op__set_uart(vcpu *vcpu);
     void domain_op__set_pt_uart(vcpu *vcpu);
+    void domain_op__add_pt_uart(vcpu *vcpu);
     void domain_op__dump_uart(vcpu *vcpu);
 
     void domain_op__share_page_r(vcpu *vcpu);

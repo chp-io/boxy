@@ -108,6 +108,26 @@ domain_op_handler::domain_op__set_pt_uart(vcpu *vcpu)
 }
 
 void
+domain_op_handler::domain_op__add_pt_uart(vcpu *vcpu)
+{
+    try {
+        if (vcpu->rbx() == self || vcpu->rbx() == vcpu->domid()) {
+            throw std::runtime_error(
+                "domain_op__add_pt_uart: self not supported");
+        }
+
+        get_domain(vcpu->rbx())->add_pt_uart(
+            gsl::narrow_cast<uart::port_type>(vcpu->rcx())
+        );
+
+        vcpu->set_rax(SUCCESS);
+    }
+    catchall({
+        vcpu->set_rax(FAILURE);
+    })
+}
+
+void
 domain_op_handler::domain_op__dump_uart(vcpu *vcpu)
 {
     try {
@@ -449,6 +469,7 @@ domain_op_handler::dispatch(vcpu *vcpu)
 
             dispatch_case(set_uart)
             dispatch_case(set_pt_uart)
+            dispatch_case(add_pt_uart)
             dispatch_case(dump_uart)
 
             dispatch_case(share_page_r)

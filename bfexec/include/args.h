@@ -51,7 +51,7 @@ parse_args(int argc, char *argv[])
     ("initrd", "The VM's initrd path", value<std::string>(), "[path]")
     ("cmdline", "Additional Linux command line arguments", value<std::string>(), "[text]")
     ("uart", "Give the VM an emulated UART", value<uint64_t>(), "[port #]")
-    ("pt_uart", "Pass-through a UART to VM", value<uint64_t>(), "[port #]");
+    ("pt_uart", "Pass-through a UART to VM", value<std::vector<uint64_t>>(), "[port #]");
 
     auto args = options.parse(argc, argv);
 

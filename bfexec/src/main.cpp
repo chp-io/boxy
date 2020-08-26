@@ -499,11 +499,16 @@ create_vm_from_bzimage(const args_type &args)
         );
     }
 
-    uint64_t pt_uart = 0;
+    std::vector<uint64_t> pt_uarts;
+
     if (args.count("pt_uart")) {
-        pt_uart = args["pt_uart"].as<uint64_t>();
+        pt_uarts = args["pt_uart"].as<std::vector<uint64_t>>();
+        if (pt_uarts.size() > PT_UART_MAX_SIZE) {
+            throw cxxopts::OptionException("Too many pt_uart");
+        }
         cmdl.add(
-            "console=uart,io," + bfn::to_string(pt_uart, 16) + ",115200n8,keep"
+            "console=uart,io," + bfn::to_string(pt_uarts[0], 16) +
+            ",115200n8,keep"
         );
     }
 
@@ -518,7 +523,8 @@ create_vm_from_bzimage(const args_type &args)
     ioctl_args.cmdl = cmdl.data();
     ioctl_args.cmdl_size = cmdl.size();
     ioctl_args.uart = uart;
-    ioctl_args.pt_uart = pt_uart;
+    ioctl_args.pt_uarts = pt_uarts.data();
+    ioctl_args.pt_uarts_size = pt_uarts.size();
     ioctl_args.size = size;
 
     ctl->call_ioctl_create_vm_from_bzimage(ioctl_args);
