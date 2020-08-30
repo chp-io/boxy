@@ -278,8 +278,9 @@ setup_pt_uarts(
     struct vm_t *vm, struct create_vm_from_bzimage_args *args)
 {
     status_t ret = SUCCESS;
+    uint64_t pt_uarts_size = (uint64_t) args->pt_uarts_size * sizeof(uint64_t);
+    uint64_t i = 0;
     vm->pt_uarts = bfalloc_page(uint64_t);
-    uint64_t pt_uarts_size = args->pt_uarts_size * sizeof(uint64_t);
 
     if (pt_uarts_size == 0) {
         return ret;
@@ -292,7 +293,7 @@ setup_pt_uarts(
     }
 
     BFDEBUG("pt_uarts_size: %llx\n", args->pt_uarts_size);
-    for (int i = 0; i < args->pt_uarts_size; i++) {
+    for (; i < args->pt_uarts_size; i++) {
         ret = hypercall_domain_op__add_pt_uart(vm->domainid, vm->pt_uarts[i]);
         if (ret != SUCCESS) {
             BFERROR(
