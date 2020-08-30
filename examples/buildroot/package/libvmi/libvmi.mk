@@ -5,7 +5,7 @@
 ################################################################################
 
 ifeq ($(BR2_LIBVMI_PATH),)
-	LIBVMI_VERSION = 1dd5a2e48e43b70b50d7ff4a01ad1fcb3b8cbba7
+	LIBVMI_VERSION = bebefc7c4564b48801baf97084ff21f26d24631c
 	LIBVMI_SITE = $(call github,chp-io,libvmi,$(LIBVMI_VERSION))
 	LIBVMI_REPO = https://github.com/chp-io/libvmi
 else
