@@ -180,6 +180,7 @@ vm_state_op_handler::map_range(vcpu *vp)
 
     try {
         dst_vm->share_range(dst_gpa, src_gpa, src_vm->ept(), size, attr, cache);
+        vp->invept();
     }
     catchall({
         throw std::runtime_error("map_range failed");
@@ -200,6 +201,7 @@ vm_state_op_handler::unmap_range(vcpu *vp)
 
     try {
         dst_vm->unshare_range(dst_gpa, size, attr, cache);
+        vp->invept();
     }
     catchall({
         throw std::runtime_error("map_range failed");
