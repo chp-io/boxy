@@ -211,6 +211,9 @@ public:
     /// effectivily remapping our guest physical addresses to their host
     /// physical addresses.
     ///
+    /// The caller must invalidate the translations derived from EPT with
+    /// invept.
+    ///
     /// @expects
     /// @ensures
     ///
@@ -232,6 +235,9 @@ public:
     ///
     /// Unshare a range of 4k guest physical addresses previously assigned with
     /// share_range.
+    ///
+    /// The caller must invalidate the translations derived from EPT with
+    /// invept.
     ///
     /// @expects
     /// @ensures
